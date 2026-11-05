@@ -235,7 +235,7 @@ start-rtsp: ## Start the cameras in configs/cameras-pymavlink.yaml when the vehi
 	-docker exec -it \
 	  -e HOST_IP=$(HOST_IP) \
 	  $(DLSPS) bash -c \
-	  "python3 /home/pipeline-server/scripts/pipeline_manager.py --start-now $(if $(CAMERAS),--config $(CAMERAS))"
+	  "python3 /home/pipeline-server/scripts/pipeline_manager.py $(if $(CAMERAS),--config $(CAMERAS))"
 
 check-cameras: ## Validate configs/cameras-pymavlink.yaml and show what would run (nothing is started). CAMERAS=<file> checks another file.
 	docker exec $(DLSPS) python3 /home/pipeline-server/scripts/camera_config.py check $(CAMERAS)
