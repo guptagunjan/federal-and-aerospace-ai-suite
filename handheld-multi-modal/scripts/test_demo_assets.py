@@ -3,13 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Offline check: completed jobs only, cache integrity, failed/partial jobs, video hashes."""
+import contextlib
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import demo_assets as assets
 
@@ -119,6 +122,33 @@ def main():
         else:
             raise AssertionError('partial video was accepted')
         assert video.read_bytes() == b'partial video'
+        # A failing or wrong first source falls back to the next one; all failing is an error.
+        good = b'fallback video'
+        sources = ('https://first.invalid/a.mp4', 'https://second.invalid/b.mp4')
+        clip = ('fallback.mp4', sources, hashlib.sha256(good).hexdigest())
+
+        def serve(content):
+            def fake_urlopen(request, timeout):
+                if request.full_url == sources[0]:
+                    raise OSError('HTTP Error 403: Forbidden')
+                response = MagicMock()
+                response.__enter__.return_value = io.BytesIO(content)
+                return response
+            return fake_urlopen
+
+        with patch.object(assets, 'VIDEOS', (clip,)), \
+                patch.object(assets.urllib.request, 'urlopen', serve(good)):
+            assets.download_video(root / 'fallback')
+        assert (root / 'fallback/data/dlsps/demo-video/fallback.mp4').read_bytes() == good
+        with patch.object(assets, 'VIDEOS', (clip,)), \
+                patch.object(assets.urllib.request, 'urlopen', serve(b'tampered')):
+            try:
+                assets.download_video(root / 'tampered')
+            except RuntimeError as error:
+                assert 'checksum mismatch' in str(error) and '403' in str(error)
+            else:
+                raise AssertionError('no verified source was accepted')
+        assert not (root / 'tampered/data/dlsps/demo-video/fallback.mp4').exists()
         # An interrupted stock Chat export is preserved, then retried; complete ones survive.
         chat = root / 'chat'
         partial = chat / 'Intel/neural-chat-7b-v3-3'
@@ -183,5 +213,46 @@ def main():
     print('PASS: stock job request, atomic installation, cached reuse, corruption/failed-job rejection, timeout cancellation, video integrity, Make dry-run safety/full-stack failure cleanup, separate device groups, interrupted Chat export recovery, committed example mission packet not auto-loaded, localhost-only bindings')
 
 
+@contextlib.contextmanager
+def captured_output(capture):
+    '''Send this process's stdout and stderr, including output written by
+    child code below the Python level, to the `capture` file.'''
+    sys.stdout.flush()
+    sys.stderr.flush()
+    saved_stdout, saved_stderr = os.dup(1), os.dup(2)
+    os.dup2(capture.fileno(), 1)
+    os.dup2(capture.fileno(), 2)
+    try:
+        yield
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(saved_stdout, 1)
+        os.dup2(saved_stderr, 2)
+        os.close(saved_stdout)
+        os.close(saved_stderr)
+
+
+def run_quietly():
+    '''Run the checks with their output captured. Simulated Model Download
+    failures print alarming lines, so the full output is shown only on failure;
+    on success only the final PASS line is printed.'''
+    with tempfile.TemporaryFile() as capture:
+        try:
+            with captured_output(capture):
+                main()
+        except BaseException:
+            capture.seek(0)
+            sys.stderr.buffer.write(capture.read())
+            sys.stderr.flush()
+            raise
+        capture.seek(0)
+        lines = capture.read().decode(errors='replace').strip().splitlines()
+        print(lines[-1] if lines else 'PASS')
+
+
 if __name__ == '__main__':
-    main()
+    if os.environ.get('TEST_VERBOSE') == '1':
+        main()
+    else:
+        run_quietly()

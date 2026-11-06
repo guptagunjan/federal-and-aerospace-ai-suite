@@ -12,8 +12,8 @@ CAMERAS ?= 2
 ASSET_ROOT ?= $(CURDIR)
 export ASSET_ROOT := $(abspath $(ASSET_ROOT))
 export WAIT_SECONDS ?= 360
-MODEL_WAIT_SECONDS ?= 3600
-AI_WAIT_SECONDS ?= 3600
+MODEL_WAIT_SECONDS ?= 5400
+AI_WAIT_SECONDS ?= 5400
 export RENDER_GID ?= $(shell stat -c '%g' /dev/dri/renderD128 2>/dev/null)
 export ACCEL_GID ?= $(shell stat -c '%g' /dev/accel/accel0 2>/dev/null)
 export ASSET_GID := $(shell id -g)
@@ -39,7 +39,7 @@ ANNOTATED_IDS := $(patsubst cam%,annotated%,$(CAMERA_IDS))
   pipelines-restart down clean clean-demo clean-history clean-all \
   demo-stop demo-down demo-status demo-pipelines-restart \
   bundle bundle-load preflight licenses setup tls asset-permissions model-downloader-up \
-  check test test-ui test-assets test-history
+  check
 
 help:
 	@echo 'Handheld operator application'
@@ -77,11 +77,16 @@ help:
 	@echo
 	@echo 'Checks: make check          Images, models and demo videos complete; once started, every service answers'
 	@echo '        make test | test-ui | test-assets | test-fuzz | test-history (needs demo-up)'
+	@echo '        Every test runs in a container; the host needs only Docker and Make.'
+	@echo '        make test-all          Offline suite: backend with coverage gate, crops, assets, UI'
+	@echo '        make test-live         Running-stack suite (needs up or demo-up): history, NPU crop path'
+	@echo '        Test options: COVERAGE_MIN=<percent> (default 75)  COVERAGE_OUTPUT=<dir> (writes coverage.xml)'
+	@echo '                      TEST_VERBOSE=1 (full output; by default only failures print it)'
 	@echo
 	@echo 'Options: CAMERAS=1..2 demo cameras (default 2)  TTS_DEVICE=CPU|GPU (default CPU)'
 	@echo '         ASSET_ROOT=<path>'
 	@echo '         CONFIRM=yes  accept the third-party licenses without asking (prereq, up and demo targets)'
-	@echo 'The first start downloads several GB of models (internet, up to an hour); later starts run offline.'
+	@echo 'The first start downloads several GB of models (internet, up to 90 minutes); later starts run offline.'
 	@echo 'Each start first lists the third-party software it downloads and their licenses, and asks to accept them.'
 
 # Shown while waiting for services that download on their first start.
@@ -637,20 +642,4 @@ check: preflight
 	  echo 'Ready for make up or make demo-up; no internet needed.'
 	fi
 
-test:
-	docker run --rm --network none -v "$(CURDIR):/srv" -w /srv/backend handheld/backend:dev python3 test_backend.py
-
-.PHONY: test-fuzz
-test-fuzz:
-	mkdir -p docs/application/evidence/SDL504-api-fuzz
-	docker run --rm --user "$$(id -u):$$(id -g)" --network none --read-only --cap-drop ALL --security-opt no-new-privileges --memory 1g --cpus 2 --pids-limit 128 --tmpfs /tmp:rw,nosuid,nodev,size=256m -e PYTHONDONTWRITEBYTECODE=1 -v "$(CURDIR):/srv:ro" -v "$(CURDIR)/docs/application/evidence/SDL504-api-fuzz:/evidence" -w /srv/backend handheld/backend:dev python3 fuzz_api.py --output /evidence --seed "$(or $(FUZZ_SEED),504)" --mutations "$(or $(FUZZ_MUTATIONS),32)"
-
-test-assets:
-	python3 scripts/test_demo_assets.py
-
-test-ui:
-	python3 backend/test_ui.py
-
-test-history:
-	docker run --rm --network host -u "$$(id -u):$$(id -g)" -e ASSET_ROOT=/srv -e NO_PROXY='*' -e no_proxy='*' \
-	  -v "$(CURDIR):/srv" -w /srv handheld/backend:dev python3 scripts/test_history.py
+include make/test.mk

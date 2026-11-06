@@ -4,7 +4,8 @@
 
 """Offline UX regression check. Requires Firefox + geckodriver, Python stdlib only.
 
-Run from the repo root: python3 backend/test_ui.py
+`make test-ui` runs it in the Backend test image (Firefox ESR, pinned geckodriver).
+Directly from the repo root: python3 backend/test_ui.py
 Optional screenshots: python3 backend/test_ui.py --screenshots ui-shots
 Fixtures prove interaction/layout, not live inference or video transport.
 """
@@ -270,6 +271,14 @@ class Fixture(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
 
+class QuietServer(ThreadingHTTPServer):
+    """The browser drops streaming fixture responses on navigation; that is not a failure."""
+    def handle_error(self, request, client_address):
+        import sys
+        if not isinstance(sys.exc_info()[1], (BrokenPipeError, ConnectionResetError)):
+            super().handle_error(request, client_address)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--screenshots', type=Path)
@@ -279,7 +288,7 @@ def main():
     snap_driver = Path('/snap/firefox/current/usr/lib/firefox/geckodriver')
     driver = os.environ.get('GECKODRIVER') or (str(snap_driver) if snap_driver.is_file() else shutil.which('geckodriver'))
     assert driver, 'Install Firefox/geckodriver to run the browser check'
-    server = ThreadingHTTPServer(('127.0.0.1', 0), Fixture)
+    server = QuietServer(('127.0.0.1', 0), Fixture)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
