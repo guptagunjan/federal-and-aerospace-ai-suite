@@ -287,6 +287,17 @@ and a live telemetry overlay (GPS, altitude, speed, heading).
 >
 > - Leverage versatile streaming media players such as VLC Player to seamlessly handle, manage, and playback the incoming streams with ease and efficiency.
 
+#### View in the ground-station dashboard (optional)
+
+The `uav-ground-station` web dashboard shows every camera stream, the scene captions and the CPU/GPU/NPU load of this host in one page. Run it on another machine (the SDK's own API already uses port `8080` on this host, the dashboard's default port):
+
+```bash
+cd ../uav-ground-station
+make up
+```
+
+Then open `http://<VIZ_HOST_IP>:8080`, enter the **UAV host's IP** (`<HOST_IP>` above) and press **Connect**. The camera cards appear once the cameras run (after the drone arms). See the [UAV Ground Station README](../../../../uav-ground-station/README.md).
+
 **Stop an individual pipeline** (only needed if you started one manually via Option B in [Step 6](#6-start-inference-pipelines)):
 
 ```bash

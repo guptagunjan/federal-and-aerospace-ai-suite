@@ -99,8 +99,9 @@ Clone the repo and get into the directory:
 ```bash
 git clone https://github.com/open-edge-platform/federal-and-aerospace-ai-suite.git --branch main
 cd federal-and-aerospace-ai-suite/uav-ground-station
+```
 
-Then:
+Then, for either option:
 
 ```bash
 make up      # creates .env from template (host IP and devices auto-detected), builds, and starts the container
@@ -177,9 +178,19 @@ multimodal-embedding-serving, vector-retriever, vdms-vector-db, postgres,
 minio; container names `uav-gs-vss-*`). With the default `make up` the search UI is hidden
 and the search routes return 404.
 
-1. Set the required `VSS_MINIO_*` / `VSS_POSTGRES_*` credentials, plus
+1. Set the required `VSS_MINIO_*` / `VSS_POSTGRES_*` credentials (choose your own; MinIO needs a user of at least 3
+   and a password of at least 8 characters, or its container keeps restarting), plus
    `VSS_EMBEDDING_MODEL` and `DATAPREP_DETECTION_MODEL` (no defaults), and,
-   optionally, devices in `.env` -- see `.env.example`.
+   optionally, devices in `.env` -- see `.env.example`. For example:
+
+   ```bash
+   VSS_MINIO_USER=minioadmin
+   VSS_MINIO_PASSWORD=<at least 8 characters>
+   VSS_POSTGRES_USER=vssuser
+   VSS_POSTGRES_PASSWORD=<your password>
+   VSS_EMBEDDING_MODEL=CLIP/clip-vit-b-32
+   DATAPREP_DETECTION_MODEL=yolox_s
+   ```
 2. `make up-vss` (base + mediamtx + VSS overlay). The first start downloads
    the CLIP embedding model (and YOLOX, for object crops) into Docker volumes.
 3. Open the dashboard and **Connect** to the UAV. Every RUNNING pipeline

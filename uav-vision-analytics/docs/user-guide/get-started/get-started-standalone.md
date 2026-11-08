@@ -208,6 +208,17 @@ The annotated stream includes bounding boxes for detected objects
 (person, car, bus, truck, bicycle, and other classes)
 and a live telemetry overlay (GPS, altitude, speed, heading).
 
+#### View in the ground-station dashboard (optional)
+
+The `uav-ground-station` web dashboard shows every camera stream, the scene captions and the CPU/GPU/NPU load of this host in one page. It is a separate stack, best run on another machine (the folder sits next to `uav-vision-analytics` in the ZIP and in the cloned repository):
+
+```bash
+cd ../uav-ground-station
+make up
+```
+
+Then open `http://<VIZ_HOST_IP>:8080` (the address `make up` detected, see the ground station's `.env`), enter the **UAV host's IP** (the `HOST_IP` of this application's `.env`, `<HOST_IP>` above) and press **Connect**. The camera cards appear once the cameras run (after the vehicle is armed). The ground-station machine must reach ports `443`, `1883` and `8555` of this host. See the [UAV Ground Station README](../../../../uav-ground-station/README.md) for all options.
+
 > [!NOTE]
 > Other ways to view the stream:
 >

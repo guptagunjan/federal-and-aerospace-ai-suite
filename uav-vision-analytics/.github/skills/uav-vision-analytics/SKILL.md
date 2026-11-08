@@ -1,23 +1,37 @@
 ---
 name: uav-vision-analytics
 description: >-
-  Build an end-to-end UAV object detection and telemetry overlay application
-  on Intel hardware using DL Streamer Pipeline Server with MAVLink telemetry.
-  USE FOR: creating UAV/drone vision analytics stacks that detect objects from
-  aerial video (file, RealSense camera, or RTSP feed), overlay live MAVLink
-  telemetry (GPS, altitude, speed, heading) on the annotated RTSP stream, and
-  support autonomous pipeline start/stop triggered by the drone armed/disarmed
-  state. Supports two deployment modes: pymavlink (self-contained with PX4 SITL)
-  and UAVSDK (integrates with uav-mission-compute-sdk). DO NOT USE FOR:
+  Build an end-to-end UAV object detection, telemetry overlay, and
+  vision-language scene-captioning application on Intel hardware using DL
+  Streamer Pipeline Server with MAVLink telemetry. USE FOR: creating
+  UAV/drone vision analytics stacks that detect objects from aerial video
+  (file, RealSense/USB camera, or RTSP feed) across one or more cameras,
+  overlay live MAVLink telemetry (GPS, altitude, speed, heading) on the
+  annotated RTSP stream, optionally run a vision-language model (VLM) per
+  camera to publish natural-language scene captions over MQTT, and support
+  autonomous pipeline start/stop triggered by the drone armed/disarmed state.
+  Supports two deployment modes: pymavlink (self-contained with PX4 SITL) and
+  UAVSDK (integrates with uav-mission-compute-sdk). Camera selection,
+  detection device, and captioning are declared per camera in a YAML file
+  (`configs/cameras-*.yaml`) read by the pipeline manager — adding a camera
+  does not require editing pipeline definitions. The RTSP streams this skill
+  produces are the ones a downstream `uav-ground-station` VSS (Video Search
+  and Summarization) deployment indexes for natural-language video search —
+  this skill does not build or configure VSS itself. DO NOT USE FOR:
   ground-based camera analytics without MAVLink telemetry, cloud-only
-  deployments, or model training.
+  deployments, model training, or building/configuring the VSS live-search
+  stack itself (that lives in `uav-ground-station`).
 license: Apache-2.0
 compatibility: >-
   Requires Docker + Docker Compose v2, Intel CPU (optionally GPU/NPU with
   video/render groups). For pymavlink mode: PX4 SITL runs in simulation.
   For UAVSDK mode: uav-mission-compute-sdk must be running first.
-  Ports 8081 (REST), 8555 (RTSP), 1883 (MQTT), 14541/udp (MAVLink) must be
-  free. Tested with intel/dlstreamer-pipeline-server:2026.3.0-ubuntu24-rc1 image.
+  Ports 443/80 (nginx, REST+UI), 8555 (RTSP), 1883 (MQTT), 14541/udp (MAVLink)
+  must be free; `dlstreamer-pipeline-server` never publishes 8081/8555
+  directly, only through the `nginx` reverse proxy (self-signed TLS cert).
+  Tested with intel/dlstreamer-pipeline-server:2026.3.0-ubuntu24-rc1 image.
+  Captioning (VLM) requires an additional OpenVINO IR model download
+  (`make vlm-model`) and runs on CPU or GPU only, never NPU.
 ---
 
 <!-- SPDX-FileCopyrightText: (C) 2026 Intel Corporation -->
@@ -25,37 +39,55 @@ compatibility: >-
 
 # UAV Vision Analytics Skill
 
-Build an end-to-end aerial object detection and telemetry overlay application
-using Intel DL Streamer Pipeline Server. The stack detects objects in video
-from a UAV camera using YOLO11s (or a custom OpenVINO model),
-overlays live MAVLink flight telemetry (altitude, speed, heading, GPS) onto the
-annotated RTSP stream, and automatically starts/stops inference pipelines in
-sync with the UAV armed/disarmed state.
+Build an end-to-end aerial object detection, telemetry overlay, and
+scene-captioning application using Intel DL Streamer Pipeline Server. The
+stack detects objects in video from one or more UAV cameras using YOLO11s (or
+a custom OpenVINO model), overlays live MAVLink flight telemetry (altitude,
+speed, heading, GPS) onto each annotated RTSP stream, optionally runs a
+vision-language model (VLM) per camera to publish natural-language scene
+captions over MQTT, and automatically starts/stops inference pipelines in
+sync with the UAV armed/disarmed state. Which cameras run, on which device,
+and whether they caption is declared in one YAML file — pipelines themselves
+are a fixed, pre-generated matrix of every `(source, detection device,
+caption device)` combination, so the skill never writes per-camera pipeline
+strings.
 
 ## Architecture Overview
 
 ```
-Video Source (file/RealSense/RTSP)
-    │
-    ▼
-DL Streamer Pipeline Server
+configs/cameras-{pymavlink,uavsdk}.yaml  (per-camera: source, detection device/model,
+      │                                   captioning on/off + device/model/prompt, overlay)
+      ▼
+scripts/camera_config.py  — validates the file, picks the matching pipeline name,
+      │                      builds the REST start request (camera_config.build_plan)
+      ▼
+scripts/mavlink_pipeline_manager.py  — re-reads the file on every ARM, starts one
+      │                                 pipeline per enabled camera, deletes them on DISARM
+      ▼
+DL Streamer Pipeline Server  (config-{pymavlink,uavsdk}.json: 18 fixed pipelines)
   ├── gvadetect (OpenVINO YOLO11s, CPU/GPU/NPU)
   ├── gvapython (telemetry overlay — altitude, speed, heading, GPS)
+  ├── [captioning branch, tee split]
+  │     └── gvagenai (VLM, CPU/GPU) → gvametaconvert → gvapython MQTTPublisher → MQTT uav/caption/<camera>
   ├── gvametaconvert → gvametapublish → MQTT
-  └── appsink → RTSP :8555
+  └── appsink → RTSP :8555 (path uav-<camera>)
          │
          ▼
-    QGC / ffplay / browser
+  nginx reverse proxy (TLS, self-signed) :443/:80 → REST+UI; :8555 → RTSP passthrough
+         │
+         ▼
+  QGC / ffplay / browser          uav-ground-station (VSS indexes uav-<camera> RTSP;
+                                   out of scope for this skill, see docs)
 
 MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
 ```
 
 ## Deployment Modes
 
-| Mode | Compose file | Telemetry source | When to use |
-|------|-------------|-----------------|-------------|
-| **pymavlink** | `docker-compose-pymavlink.yml` | MAVLink UDP :14541 via mavlink-router from PX4 SITL | Self-contained simulation |
-| **uavsdk** | `docker-compose-uavsdk.yml` | MQTT `uav/{id}/telemetry/status` from SDK | Integration with uav-mission-compute-sdk |
+| Mode | Compose file | Telemetry source | Camera file | When to use |
+|------|-------------|-----------------|-------------|-------------|
+| **pymavlink** | `docker-compose-pymavlink.yml` | MAVLink UDP :14541 via mavlink-router from PX4 SITL | `configs/cameras-pymavlink.yaml` | Self-contained simulation |
+| **uavsdk** | `docker-compose-uavsdk.yml` | MQTT `uav/{id}/telemetry/status` from SDK | `configs/cameras-uavsdk.yaml` | Integration with uav-mission-compute-sdk |
 
 ## How to Use This Skill
 
@@ -70,11 +102,13 @@ MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
 
 | File | Load when authoring |
 |------|-------------------|
-| [`references/PIPELINE.md`](references/PIPELINE.md) | DL Streamer config.json, pipeline variants, REST launcher, payload format |
+| [`references/CAMERAS.md`](references/CAMERAS.md) | `configs/cameras-*.yaml` schema, `camera_config.py`, pipeline-name derivation, adding/editing cameras |
+| [`references/PIPELINE.md`](references/PIPELINE.md) | DL Streamer config.json (18-pipeline matrix), REST launcher, payload format, captioning branch wiring |
+| [`references/CAPTIONING.md`](references/CAPTIONING.md) | VLM scene captioning: `gvagenai`, `make vlm-model`, MQTT caption topics, prompt/token tuning |
 | [`references/TELEMETRY.md`](references/TELEMETRY.md) | MAVLink/UAVSDK telemetry overlay (gvapython), pipeline manager scripts |
-| [`references/DEPLOY.md`](references/DEPLOY.md) | Docker Compose services, env vars, Makefile targets, volumes, device access |
-| [`references/MODEL.md`](references/MODEL.md) | YOLO11s download + OpenVINO export, custom model substitution |
-| [`references/TESTS.md`](references/TESTS.md) | pytest structure, REST API tests, RTSP stream validation, MQTT checks |
+| [`references/DEPLOY.md`](references/DEPLOY.md) | Docker Compose services (incl. nginx, metrics-manager), env vars, Makefile targets, volumes, device access |
+| [`references/MODEL.md`](references/MODEL.md) | YOLO11s download + OpenVINO export, custom detection-model substitution |
+| [`references/TESTS.md`](references/TESTS.md) | pytest structure, REST API tests, RTSP stream validation, MQTT/caption checks |
 | [`benchmark.md`](benchmark.md) | Evaluation baseline: agent output with the skill loaded compared with no skill |
 
 ## Parameters (from invoking prompt)
@@ -82,11 +116,13 @@ MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
 | Param | Purpose |
 |-------|---------|
 | `{{DEPLOYMENT_MODE}}` | `pymavlink` \| `uavsdk` |
-| `{{VIDEO_SOURCE}}` | `file` (gazebo.avi loop) \| `realsense` (v4l2src) \| `rtsp` (rtspsrc) \| `gazebo-rtsp` (RTSP from SDK sim) |
-| `{{DEVICE}}` | `CPU` \| `GPU` \| `NPU` \| `all` (generates CPU+GPU+NPU variants) |
+| `{{CAMERAS}}` | List of cameras, each with `{{VIDEO_SOURCE}}`, `{{DEVICE}}`, `{{CAPTIONING}}` (see below) |
+| `{{VIDEO_SOURCE}}` (per camera) | `file` (looped `.avi`/`.mp4`/`.mkv`/`.ts` from `resources/videos`) \| `device` (RealSense/USB `/dev/video*`) \| `rtsp` (SDK RTSP stream, uavsdk mode only) |
+| `{{DEVICE}}` (per camera) | `cpu` \| `gpu` \| `npu` — detection device for that camera |
+| `{{CAPTIONING}}` (per camera) | `off` \| `cpu` \| `gpu` — whether/where the VLM captions that camera (never `npu`) |
+| `{{CAPTION_PROMPT}}` / `{{CAPTION_MAX_TOKENS}}` (per camera) | VLM prompt (letters, digits, spaces, `, . ? ' -` only) and max new tokens |
 | `{{MODEL}}` | `yolo11s` (default) \| path to custom OpenVINO IR `.xml` |
-| `{{PIPELINE_PREFIX}}` | prefix for pipeline names, e.g. `uav_object_detection` |
-| `{{RTSP_PATHS}}` | RTSP stream path(s) published by DL Streamer Pipeline Server, e.g. `uav-cpu`, `uav-gpu` |
+| `{{VLM_MODEL}}` | `InternVL2-1B` (default) \| another OpenVINO-IR-exportable VLM id |
 | `{{UAV_ID}}` | UAV identifier for UAVSDK MQTT topic, e.g. `uav-1` |
 | `{{STACK_DIR}}` | output directory for the new application stack |
 | `{{OVERLAY_NAME}}` | label shown in the telemetry overlay, e.g. `MyUAV-CPU` |
@@ -94,9 +130,10 @@ MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
 ## Questions (single batched prompt)
 
 1. Deployment mode [`pymavlink`] (`pymavlink` or `uavsdk`)
-2. Video source [`file`] (`file` for gazebo.avi loop, `realsense` for Intel RealSense, `rtsp` for external RTSP, `gazebo-rtsp` for SDK simulation streams)
-3. Inference device [`CPU`] (`GPU`, `NPU`, or `all` to generate all three variants)
-4. Model [`yolo11s`] (or path to a custom OpenVINO IR `.xml` file)
+2. Cameras (one or more) — for each: id, source (`file`/`device`/`rtsp`), detection device
+   (`cpu`/`gpu`/`npu`), captioning (`off`/`cpu`/`gpu`) [default: 1 camera, `file`, `npu`, captioning `off`]
+3. Detection model [`yolo11s`] (or path to a custom OpenVINO IR `.xml` file)
+4. VLM model [`InternVL2-1B`] (only asked if any camera has captioning enabled)
 5. Output directory [`./uav-stack`]
 6. UAV ID (UAVSDK mode only) [`uav-1`]
 
@@ -105,30 +142,48 @@ MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
 | Param | Rule | Failure |
 |-------|------|---------|
 | `DEPLOYMENT_MODE` | `pymavlink`\|`uavsdk` | wrong compose file selected |
-| `VIDEO_SOURCE` | `file`\|`realsense`\|`rtsp`\|`gazebo-rtsp` | pipeline GStreamer string invalid |
-| `DEVICE` | `CPU`\|`GPU`\|`NPU`\|`all` | unknown device in gvadetect |
+| Camera `id` | `^[a-z][a-z0-9_]{0,31}$` | RTSP path / MQTT topic / `model-instance-id` invalid |
+| Camera source | `file`\|`device`\|`rtsp` (`rtsp` only in `uavsdk` mode) | pipeline not in the matrix, `camera_config.py` rejects the file |
+| Camera `detection.device` | `cpu`\|`gpu`\|`npu` | no matching `uav_object_detection_*`/`uav_camera_*` pipeline |
+| Camera `captioning.device` | `off`\|`cpu`\|`gpu` (never `npu`) | `gvagenai` has no NPU plugin — pipeline fails at start |
 | `MODEL` | ends in `.xml`, file exists (if custom) | DL Streamer Pipeline Server fails to load model |
-| `UAV_ID` | `^[a-z0-9-]+$`, no spaces | MQTT topic invalid |
-| `PIPELINE_PREFIX` | `^[a-z0-9_]+$` | REST path + MQTT topic break |
+| `VLM_MODEL` | OpenVINO IR folder exists under `resources/ov_models/<device>/<model>/` for every device a camera captions on | `gvagenai` fails to load, pipeline start errors |
+| `captioning.prompt` | `^[A-Za-z0-9 ,.?'-]+$` | pipeline parameter pattern rejects the start request |
+| `UAV_ID` | `^[A-Za-z0-9_-]{1,32}$`, no spaces | MQTT topic / RTSP URL invalid |
 
 ## Supported Use Cases
 
-| Use case | `DEPLOYMENT_MODE` | `VIDEO_SOURCE` | `DEVICE` |
-|----------|------------------|---------------|---------|
-| PX4 SITL sim, looped video, CPU inference | `pymavlink` | `file` | `CPU` |
-| PX4 SITL sim, looped video, all devices | `pymavlink` | `file` | `all` |
-| Intel RealSense camera, GPU | `pymavlink` | `realsense` | `GPU` |
-| SDK integration, 3-camera (nadir/forward/rear) | `uavsdk` | `gazebo-rtsp` | `all` |
-| Custom model, custom RTSP feed | `pymavlink` | `rtsp` | `CPU` |
+| Use case | `DEPLOYMENT_MODE` | Cameras | Notes |
+|----------|------------------|---------|-------|
+| PX4 SITL sim, one looped video, CPU detection, no captions | `pymavlink` | 1× `file`/`cpu`/off | Minimal stack |
+| PX4 SITL sim, three cameras, NPU detection + GPU captions | `pymavlink` | 3× `file`/`npu`/`gpu` | Matches the shipped `cameras-pymavlink.yaml` |
+| Intel RealSense/USB camera, GPU detection | `pymavlink` | 1× `device`/`gpu`/off | Needs `CAMERA_DEVICE_1`..`_4` in `.env` |
+| SDK integration, 3-camera (nadir/forward/rear) with captions | `uavsdk` | 3× `rtsp`/mixed device/`gpu` | Matches the shipped `cameras-uavsdk.yaml`; requires `uav-mission-compute-sdk` running |
+| Custom detection model, one camera, captioning off | `pymavlink` | 1× `file`/`cpu`/off | Swap `detection.model` only |
 
 ## Execution Guardrails
 
 - Before generating files: verify all parameters pass validation.
-- Before `make pymav-up` or `make uavsdk-up`: check ports 8081, 8555, 1883 are free.
+- Before `make pymav-up` or `make uavsdk-up`: check ports 80, 443, 8555, 1883 are free.
 - For UAVSDK mode: confirm `uav-mission-compute-sdk` stack is running first.
 - Never hardcode secrets — use `.env` variables for `HOST_IP`, device GIDs, credentials.
-- Use `make model` to download and export the model before starting the stack.
+- Use `make model` to download/export the detection model, and (if any camera captions)
+  `make vlm-model` to download/export the VLM, before starting the stack.
 - Always quote shell variables: `"$HOST_IP"`, `"$MODEL_PATH"`.
+- Never add, remove or rename pipelines to add a camera — the 18-pipeline matrix in
+  `config-{pymavlink,uavsdk}.json` already covers every `(source × detection device ×
+  caption device)` combination (see `references/CAMERAS.md` and `references/PIPELINE.md`).
+  Adding a camera means adding an entry to `configs/cameras-*.yaml`, never editing
+  `config.json`.
+- Run `make check-cameras` after every edit to `configs/cameras-*.yaml` — a file with
+  errors is refused and the previous configuration keeps running, so a silent typo
+  stops a camera without surfacing until `check-cameras`/`cameras-status` is run.
+- Captioning devices are `cpu`/`gpu` only — never generate `captioning.device: npu`,
+  `gvagenai` has no NPU plugin.
+- `dlstreamer-pipeline-server` MUST NOT publish `8081`/`8555` to the host via `ports:` —
+  it is reached only through the `nginx` reverse proxy (self-signed TLS cert on `443`,
+  `80` redirects to it, raw TCP passthrough for RTSP on `8555`). Use `curl -k` against
+  `https://<HOST_IP>/...`.
 - For pymavlink mode: the `mavlink-router` build `context` MUST point to
   `./mavlink-router` inside `{{STACK_DIR}}` — copy `Dockerfile` + `main.conf`
   into the stack; never reference a sibling repo (e.g.
@@ -143,9 +198,17 @@ MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
   manager blocks forever waiting for a heartbeat.
 - Never include active (non-commented) proxy vars in `.env.example`. `make`
   exports every variable from `.env`; an empty `http_proxy=` overrides the
-  system proxy from `/etc/environment` and silently breaks `make model`
-  (pip and huggingface-cli lose the corporate proxy). Use commented examples
-  instead: `# http_proxy=`.
+  system proxy from `/etc/environment` and silently breaks `make model` /
+  `make vlm-model` (pip and huggingface-cli lose the corporate proxy). Use
+  commented examples instead: `# http_proxy=`.
+- VSS (Video Search and Summarization) live search over these RTSP streams is a
+  `uav-ground-station` feature, not something this skill builds — if the prompt
+  asks for "search my drone video" or similar, point to `uav-ground-station`'s
+  `make up-vss` and the `vss-live-search` how-to guide instead of generating VSS
+  services in this stack. This skill's job ends at producing a correctly named,
+  continuously running `uav-<camera>` RTSP stream (and, if captioning is
+  enabled, an `uav/caption/<camera>` MQTT topic) that VSS/the ground station can
+  consume.
 
 ## Generated File Layout
 
@@ -154,47 +217,64 @@ MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
 ├── docker-compose-pymavlink.yml     # or docker-compose-uavsdk.yml
 ├── 10040_sihsim_quadx.post          # PX4 airframe MAVLink routing (pymavlink only)
 ├── .env.example                     # template; `make init` creates the local env file from it
-├── Makefile                         # init, model, stack up/down, pipeline start/stop
+├── Makefile                         # init, model, vlm-model, stack up/down, pipeline start/stop
 ├── configs/
-│   └── config-{{PIPELINE_PREFIX}}.json   # DL Streamer Pipeline Server pipeline definitions
+│   ├── cameras-{{MODE}}.yaml              # per-camera source/device/captioning declarations
+│   ├── config-{{MODE}}.json               # fixed 18-pipeline DL Streamer Pipeline Server matrix
+│   ├── nginx/
+│   │   ├── nginx-{{MODE}}.conf            # reverse proxy + TLS termination + RTSP passthrough
+│   │   └── ssl/                           # self-signed cert/key
+│   ├── mosquitto/                         # broker config (pymavlink only)
+│   └── mavlink-router/                    # router config (pymavlink only)
 ├── gvapython/
-│   └── telemetry-overlay-{{MODE}}.py     # gvapython telemetry overlay
+│   └── telemetry-overlay-{{MODE}}.py      # gvapython telemetry overlay
 ├── scripts/
-│   └── pipeline_manager.py               # armed/disarmed pipeline lifecycle
+│   ├── camera_config.py                   # loads/validates cameras-*.yaml, builds the start-request plan
+│   ├── mavlink_pipeline_manager.py        # armed/disarmed pipeline lifecycle, reads camera_config
+│   └── convert_video.sh                   # prepares a video file for the `video:` source
 ├── mavlink-router/
 │   ├── Dockerfile                         # self-contained build (pymavlink only — never reference an external path)
 │   └── main.conf                          # mavlink-router config (pymavlink only)
 ├── resources/
-│   ├── models/yolo11s/          # exported OpenVINO model
-│   └── videos/gazebo.avi                 # sample video (file source)
+│   ├── models/yolo11s/                    # exported OpenVINO detection model
+│   ├── ov_models/{cpu,gpu}/InternVL2-1B/  # exported OpenVINO VLM (only if any camera captions)
+│   └── videos/*.avi                       # sample video(s) (file source cameras)
 └── tests/
     ├── conftest.py
     ├── test_stack_up.py
     ├── test_pipeline_start.py
     ├── test_rtsp_stream.py
-    └── test_mavlink_trigger.py
+    ├── test_mavlink_trigger.py
+    └── test_captioning.py                 # only if any camera has captioning enabled
 ```
 
 ## Template Variable Substitution
 
 Every `{{VAR}}` in generated code MUST be substituted with its concrete value
-before writing the file — literal `{{...}}` left in config.json, docker-compose,
-or scripts is a syntax error.
+before writing the file — literal `{{...}}` left in `cameras-*.yaml`, `config.json`,
+docker-compose, or scripts is a syntax error (or, for `cameras-*.yaml`, a
+`camera_config.py` validation failure).
 
 ## Completion Criteria (all must pass)
 
 1. `make init` succeeds: `.env` created with auto-detected `HOST_IP` and GPU/NPU device paths.
-2. `make model` succeeds: OpenVINO IR model present at
+2. `make model` succeeds: OpenVINO IR detection model present at
    `resources/models/yolo11s/yolo11s_openvino_model/yolo11s.xml`.
-3. `make pymav-up` (or `make uavsdk-up`) → all containers `running`, including `nginx`.
-4. A GET on `https://localhost/pipelines` (with a client that accepts the self-signed certificate)
+3. If any camera has captioning enabled: `make vlm-model` succeeds — OpenVINO IR VLM
+   present at `resources/ov_models/<device>/<model>/` for every captioning device used.
+4. `make check-cameras` reports the camera file as valid and prints the expected
+   pipeline/stream-path/detection+captioning table with no unavailable-pipeline warnings.
+5. `make pymav-up` (or `make uavsdk-up`) → all containers `running`, including `nginx`.
+6. A GET on `https://localhost/pipelines` (with a client that accepts the self-signed certificate)
    returns the registered pipeline definitions
    (`dlstreamer-pipeline-server` no longer publishes a host port directly — it is reached
    only through the `nginx` reverse proxy on `443`, which uses a self-signed certificate).
-5. Pipeline manager starts with `make start-rtsp` and connects to MAVLink/MQTT.
-6. On ARMED signal: pipelines start; RTSP streams appear at `:8555`.
-7. `ffplay rtsp://localhost:8555/{{RTSP_PATH}}` shows annotated video with telemetry overlay.
-8. On DISARMED signal: all pipeline instances are deleted.
-9. On UAVSDK mode: pipelines start only after RTSP probe confirms streams are live.
-10. `make pymav-down` (or `make uavsdk-down`) cleanly stops all containers.
-11. `pytest -q tests/` passes all tests.
+7. Pipeline manager starts with `make start-rtsp` and connects to MAVLink/MQTT.
+8. On ARMED signal: pipelines start; RTSP streams appear at `:8555` as `uav-<camera>`.
+9. `ffplay rtsp://localhost:8555/uav-<camera>` shows annotated video with telemetry overlay.
+10. For a captioning-enabled camera: `uav/caption/<camera>` on MQTT receives a new caption
+    roughly every 5 seconds once the pipeline is running.
+11. On DISARMED signal: all pipeline instances are deleted.
+12. On UAVSDK mode: pipelines start only after RTSP probe confirms streams are live.
+13. `make pymav-down` (or `make uavsdk-down`) cleanly stops all containers.
+14. `pytest -q tests/` passes all tests.
