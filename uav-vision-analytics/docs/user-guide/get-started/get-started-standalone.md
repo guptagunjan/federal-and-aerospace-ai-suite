@@ -201,7 +201,7 @@ ffplay rtsp://<HOST_IP>:8555/uav-back-camera
 Cameras with captioning on publish a caption on the MQTT topic `uav/caption/<camera>`:
 
 ```bash
-mosquitto_sub -h <HOST_IP> -t uav/caption/front_camera
+docker exec uav-va-broker mosquitto_sub -t 'uav/caption/#' -C 3
 ```
 
 The annotated stream includes bounding boxes for detected objects

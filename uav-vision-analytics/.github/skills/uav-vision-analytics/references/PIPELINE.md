@@ -17,9 +17,10 @@ REST path and MQTT topic suffix are derived from the `name` field.
 - Status:       `GET  /pipelines/{instance_id}/status`
 - Delete:       `/pipelines/{instance_id}` (HTTP DELETE)
 
-The POST response body is the integer `instance_id` — save it for DELETE calls.
+The POST response body is the `instance_id` (a quoted 32-character hex string, not an integer) — save it
+(strip the quotes with `tr -d '"'`) for DELETE calls.
 
-The **18-pipeline matrix** below is fixed and pre-generated into
+The **pipeline matrix** below is fixed and pre-generated into
 `config-pymavlink.json` / `config-uavsdk.json` / `config-pymavlink-realsense.json` —
 adding a camera is a `configs/cameras-*.yaml` edit, never a new pipeline definition
 (see `references/CAMERAS.md`). Pipelines with a captioning branch

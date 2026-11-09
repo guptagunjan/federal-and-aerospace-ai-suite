@@ -15,7 +15,7 @@
         "config.json with pipeline variants uav_object_detection_cpu, uav_object_detection_gpu, uav_object_detection_npu present in the fixed pipeline matrix",
         "gvapython telemetry overlay with MavlinkReceiver thread parsing GLOBAL_POSITION_INT, VFR_HUD, GPS_RAW_INT",
         "mavlink_pipeline_manager.py re-reads configs/cameras-pymavlink.yaml on every ARM and calls REST API per enabled camera",
-        "DELETE uses /pipelines/{instance_id} (integer from POST response), NOT /pipelines/{name}/{id}",
+        "DELETE uses /pipelines/{instance_id} (the hex string returned by the POST), NOT /pipelines/{name}/{id}",
         "mavlink-router build context is self-contained inside the generated stack (./mavlink-router), never a sibling repo path",
         "10040_sihsim_quadx.post generated and mounted into the px4 service",
         "ultralytics==8.4.67 pinned in requirements.txt for model export"

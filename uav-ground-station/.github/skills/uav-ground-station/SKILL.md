@@ -11,11 +11,9 @@ description: >-
   drone's video from another machine", "add natural-language video search to
   the dashboard", "connect the viewer to a different UAV host", "the
   dashboard doesn't show video / captions / search". DO NOT USE FOR:
-  deploying the UAV-side stack itself (cameras, detection, captioning,
-  telemetry overlay — use `uav-vision-analytics` and its customization
-  skills), or tuning an *already-deployed* VSS search's result count/
-  relevance/indexing settings (use `uav-tune-vss-search`, which edits this
-  stack's own `.env` for that narrower purpose).
+  deploying the UAV-side stack itself (use `uav-vision-analytics` and its
+  customization skills), or tuning an already-deployed VSS search's result
+  count/relevance/indexing settings (use `uav-tune-vss-search` instead).
 license: Apache-2.0
 compatibility: >-
   Requires Docker + Docker Compose v2 and `make` on a machine that can reach
@@ -124,6 +122,17 @@ change between releases; do not hardcode a remembered value.
 - `make up` always includes the mediamtx relay sidecar — there is no
   "video-less" mode; if H.264 Relay isn't wanted, that's a reason to
   question the request, not a flag to pass.
+- Keep `sourceOnDemandStartTimeout`/`sourceOnDemandCloseAfter` at `60s`
+  (`configs/mediamtx.yml` and the per-path values set in `backend/main.py`):
+  the relay starts a UAV stream on first viewer, and mediamtx's 10 s default drops
+  the first connection while the remote pipeline is busy under concurrent
+  detection + VLM load.
+- Single-machine test next to the UAV Mission Compute SDK: the SDK already
+  binds `8080` (REST) and `8889`/`8189` (mediamtx WebRTC). Before `make up`,
+  set `VIZ_PORT` (e.g. `8081`) and `MEDIAMTX_WEBRTC_PORT`/
+  `MEDIAMTX_WEBRTC_ICE_UDP_PORT`/`MEDIAMTX_WEBRTC_ICE_TCP_PORT` in `.env`;
+  otherwise compose fails with "port is already allocated". The dashboard URL
+  then uses that `VIZ_PORT`, not `8080`.
 - Never fabricate/accept committed `VSS_MINIO_PASSWORD`/`VSS_POSTGRES_PASSWORD`
   values into any tracked file — these live only in the gitignored `.env`;
   ask the user for them or generate a strong random value and show it once.

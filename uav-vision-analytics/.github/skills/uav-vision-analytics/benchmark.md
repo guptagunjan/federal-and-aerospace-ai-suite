@@ -16,7 +16,7 @@ Streamer Pipeline Server. The key differentiator is correct wiring of:
   which detection device, and whether/how they caption — never hand-written per-camera
   pipeline definitions
 - `gvapython` telemetry overlay (MAVLink thread → frame labels → `gvawatermark`)
-- Correct DL Streamer Pipeline Server REST API paths (`/pipelines/user_defined_pipelines/{name}`, integer `instance_id` for DELETE)
+- Correct DL Streamer Pipeline Server REST API paths (`/pipelines/user_defined_pipelines/{name}`, `instance_id` string from the POST response for DELETE)
 - pymavlink armed/disarmed pipeline lifecycle, re-reading the camera file on every arming
 - UAVSDK MQTT-triggered lifecycle with `ffprobe` RTSP pre-flight check
 - OpenVINO device variants (CPU/GPU/NPU) with correct GStreamer elements

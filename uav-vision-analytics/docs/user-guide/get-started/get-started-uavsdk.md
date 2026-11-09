@@ -9,7 +9,7 @@ This guide provides a step-by-step walkthrough for testing the UAV Vision Analyt
 
 ## How It Works
 
-A minimal single-container stack. Telemetry is received via MQTT from the `uav-mission-compute-sdk` project, which must be started first. The DL Streamer Pipeline Server container reads armed/disarmed state from `uav/{id}/telemetry/status` and subscribes to three RTSP camera streams (nadir, forward, rear).
+A minimal stack. Telemetry is received via MQTT from the `uav-mission-compute-sdk` project, which must be started first. The DL Streamer Pipeline Server container reads armed/disarmed state from `uav/{id}/telemetry/status` and subscribes to three RTSP camera streams (nadir, forward, rear).
 
 ![uav vision analytics sdk](../_assets/FedAero-uav-vision-uavsdk.svg)
 
@@ -357,9 +357,9 @@ Nine pipelines with the same names as the simulator stack: `uav_object_detection
 
 | Camera | Pipeline | Source (inside Docker) | Output RTSP (host) |
 | --- | --- | --- | --- |
-| `nadir_camera` | `uav_object_detection_cpu` | `rtsp://host.docker.internal:8554/<UAV_ID>/nadir` | `rtsp://<HOST_IP>:8555/uav-nadir-camera` |
-| `forward_camera` | `uav_object_detection_gpu` | `rtsp://host.docker.internal:8554/<UAV_ID>/forward` | `rtsp://<HOST_IP>:8555/uav-forward-camera` |
-| `rear_camera` | `uav_object_detection_npu` | `rtsp://host.docker.internal:8554/<UAV_ID>/rear` | `rtsp://<HOST_IP>:8555/uav-rear-camera` |
+| `nadir_camera` | `uav_object_detection_cpu_gpu` | `rtsp://host.docker.internal:8554/<UAV_ID>/nadir` | `rtsp://<HOST_IP>:8555/uav-nadir-camera` |
+| `forward_camera` | `uav_object_detection_gpu_gpu` | `rtsp://host.docker.internal:8554/<UAV_ID>/forward` | `rtsp://<HOST_IP>:8555/uav-forward-camera` |
+| `rear_camera` | `uav_object_detection_npu_gpu` | `rtsp://host.docker.internal:8554/<UAV_ID>/rear` | `rtsp://<HOST_IP>:8555/uav-rear-camera` |
 
 > [!NOTE]
 > `<UAV_ID>` is the `UAV_ID` environment variable (default: `uav-1`); set another value in `.env` if your SDK project uses a different vehicle ID. The cameras file uses the placeholder `{uav_id}`, so nothing else has to change.

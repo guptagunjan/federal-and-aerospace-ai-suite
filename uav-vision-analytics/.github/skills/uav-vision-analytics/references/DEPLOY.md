@@ -20,6 +20,10 @@
 every port a client touches (`80`/`443` REST+UI, `8555` RTSP, `1883` MQTT) is published
 by `nginx` only, bound to `${HOST_IP:-127.0.0.1}`.
 
+Every service sets `container_name: uav-va-<service>` (e.g. `uav-va-dlstreamer-pipeline-server`,
+`uav-va-nginx`, `uav-va-broker`); `docker exec`/`docker logs` and the Makefile use those names,
+never the bare service name. Both modes use the same names and host ports, so only one mode runs
+at a time.
 ### px4 Service (pymavlink mode)
 
 The `px4` service MUST mount the airframe configuration file that tells PX4 which
@@ -37,7 +41,7 @@ Docker Compose fragment:
   px4:
     image: px4io/px4-sitl:latest
     hostname: px4-sitl
-    container_name: px4
+    container_name: uav-va-px4
     volumes:
       - ./10040_sihsim_quadx.post:/opt/px4/etc/init.d-posix/airframes/10040_sihsim_quadx.post
     stdin_open: true
@@ -57,7 +61,7 @@ Docker Compose fragment:
 | Service | Image | Ports | Role |
 |---------|-------|-------|------|
 | `dlstreamer-pipeline-server` | `${DLSTREAMER_PIPELINE_SERVER_IMAGE}` | *(none — reached only via `nginx`)* | AI inference + RTSP output; `ARM_SOURCE=mqtt` reads the SDK's MQTT status topic, `CAMERAS_CONFIG=configs/cameras-uavsdk.yaml` |
-| `metrics-manager` | `intel/metrics-manager:2026.2.0` | — | CPU/GPU/NPU/power metrics collection |
+| `metrics-manager` | `intel/metrics-manager:2026.3.0-rc1` | — | CPU/GPU/NPU/power metrics collection (container `uav-va-metrics-manager`) |
 | `nginx` | `nginx:1.27-alpine` | `80`, `443`, `8555` | Reverse proxy / TLS termination; this mode has no `broker`/`px4`/`mavlink-router` services — MQTT (caption/telemetry) is the SDK's own broker, reached via `host.docker.internal:${MQTT_BROKER_PORT:-1883}` |
 
 No `broker`, `px4` or `mavlink-router` service exists in this mode — telemetry arrives over
@@ -106,7 +110,7 @@ mavlink-router:
       https_proxy: ${https_proxy:-}
       no_proxy:    ${no_proxy:-localhost,127.0.0.0/8}
       NO_PROXY:    ${NO_PROXY:-localhost,127.0.0.0/8}
-  container_name: mavlink-router
+  container_name: uav-va-mavlink-router
   restart: unless-stopped
   volumes:
     - ./mavlink-router/main.conf:/etc/mavlink-router/main.conf
@@ -163,7 +167,7 @@ dlstreamer-pipeline-server:
       FROM ${DLSTREAMER_PIPELINE_SERVER_IMAGE}
       RUN pip install --no-cache-dir pymavlink    # pymavlink mode only
   image: ${DLSTREAMER_PIPELINE_SERVER_IMAGE}-pymavlink
-  container_name: dlstreamer-pipeline-server
+  container_name: uav-va-dlstreamer-pipeline-server
   environment:
     - http_proxy=${http_proxy}
     - https_proxy=${https_proxy}
@@ -232,7 +236,7 @@ dlstreamer-pipeline-server:
 > ```yaml
 > nginx:
 >   image: nginx:1.27-alpine
->   container_name: nginx
+>   container_name: uav-va-nginx
 >   restart: unless-stopped
 >   volumes:
 >     - ./configs/nginx/nginx-pymavlink.conf:/etc/nginx/nginx.conf:ro

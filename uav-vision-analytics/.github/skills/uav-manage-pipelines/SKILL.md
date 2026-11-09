@@ -69,7 +69,7 @@ payload.
 | Context | Rule | Why |
 | --- | --- | --- |
 | Starting a pipeline | pipeline `name` exists in the mounted `config.json` (list first if unsure) | a typo'd name 404s |
-| Stopping/checking a pipeline | use the integer `instance_id` from the POST response, never the pipeline `name` | `DELETE /pipelines/{instance_id}`, not `/pipelines/{name}/{id}` |
+| Stopping/checking a pipeline | use the `instance_id` string (32-char hex) from the POST response, never the pipeline `name` | `DELETE /pipelines/{instance_id}`, not `/pipelines/{name}/{id}` |
 | Editing an element property | keep the element's device in step with the pipeline's name (`uav_object_detection_gpu` keeps `device=GPU` throughout) | a mismatched device silently fails or runs on the wrong hardware |
 | Adding a parameter | give it a `type`, a `default`, and a `pattern`/`minimum`/`maximum` restricting caller input | an unconstrained parameter lets a start request inject arbitrary pipeline behaviour |
 | Captioning-branch edits | device stays `cpu`/`gpu` only, frame-rate throttle (`videorate ... framerate=1/5`) stays unless the user explicitly wants a different cadence | `gvagenai` has no NPU plugin; removing the throttle overloads the VLM |
@@ -80,11 +80,9 @@ payload.
   self-signed certificate (`curl -k`) — `dlstreamer-pipeline-server`'s own
   port is not published to the host; never suggest a direct `:8081` URL.
 - If a REST call hangs or gets an unrelated `403`/proxy error even though the
-  stack is healthy, a shell-level `http_proxy`/`https_proxy` is likely
-  routing local/LAN traffic through a corporate proxy that can't reach
-  `HOST_IP`. Exclude it the same way `benchmark/calc_stream_density.sh` does:
-  `unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY; export no_proxy="*"`
-  before calling `curl`. See
+  stack is healthy, a shell-level `http_proxy`/`https_proxy` is routing
+  local/LAN traffic through a corporate proxy. Bypass it per call:
+  `curl -k -s --noproxy '*' "https://${HOST_IP}/pipelines/status"`. See
   `docs/user-guide/how-to-guides/troubleshooting.md#pipelines`.
 - `GET /pipelines/status` retains every instance's history (`COMPLETED`,
   `ERROR`, `ABORTED`) until the container restarts — it never shrinks back
@@ -107,21 +105,23 @@ payload.
   (`make pymav-down && make pymav-up`, or the `uavsdk` equivalent) — its
   pipeline root is a tmpfs volume, and `restart` alone keeps the stale
   config; then `make start-rtsp` to restart the pipeline manager.
-- Stopping a pipeline through the manager means disarming the vehicle; to
-  stop everything the manager started while it keeps waiting for the
-  vehicle, use the REST [stop-all loop](../../docs/user-guide/how-to-customize/pipeline-management/manage-pipelines.md#stop-all-running-pipelines)
-  (there is no single stop-all endpoint, and `pipeline_manager.py` itself
-  has no `--stop-all` flag — only `--config`, `--start-now`, `--status`),
-  not `docker stop` on the container (which also kills the manager).
+- Stopping a pipeline through the manager means disarming the vehicle. Stopping the manager
+  itself (Ctrl+C, `docker stop`, `pkill -TERM -f pipeline_manager.py`) also stops every camera
+  it started — it does not leave them running. To stop pipelines while the manager keeps
+  waiting for the vehicle, use the REST stop-all loop documented in
+  `docs/user-guide/how-to-customize/pipeline-management/manage-pipelines.md`
+  (section "Stop all running pipelines"; there is no single stop-all endpoint, and
+  `pipeline_manager.py` has no `--stop-all` flag — only `--config`, `--start-now`, `--status`),
+  not `docker stop` on the container.
 - `make start-rtsp` runs `docker exec -it ...` and needs a real terminal —
-  launched from a non-interactive context (a background/CI script, `nohup`,
+  launched from a non-interactive context (a background script, `nohup`,
   a non-tty SSH session) it fails with "cannot attach stdin to a TTY-enabled
   container" and, because the Makefile recipe is prefixed `-` (ignore
   errors), `make` still exits `0`, silently leaving no manager running.
-  For any non-interactive validation/automation, start the manager with
-  `docker exec -d <dlstreamer-pipeline-server container> python3
+  For non-interactive use, start the manager with
+  `docker exec -d -e HOST_IP="$HOST_IP" uav-va-dlstreamer-pipeline-server python3
   /home/pipeline-server/scripts/pipeline_manager.py --start-now` instead (no
-  vehicle required — see `references/CAMERAS.md`), and confirm with
+  vehicle arming required — see `references/CAMERAS.md`), and confirm with
   `make cameras-status`, not by trusting the launch command's own exit code.
 - Report exact REST calls and file edits made; never run
   `make pymav-down`/`make uavsdk-down` without the user's confirmation, since

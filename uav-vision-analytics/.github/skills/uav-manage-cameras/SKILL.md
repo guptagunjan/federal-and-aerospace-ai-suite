@@ -99,15 +99,17 @@ remembered version (the format can change between app releases).
 - Edit the YAML file in place (preserve other cameras, comments, and key
   order as much as the editor allows); never regenerate the whole file from
   scratch unless the user asked to start over.
-- Always run `make check-cameras` (or `make check-cameras CAMERAS=<file>`
-  for a non-default file) after every edit, before telling the user it is
+- Always run `make check-cameras` after every edit, before telling the user it is
   done — a file with errors is refused by the pipeline manager and the
   previous configuration silently keeps running, so an unvalidated typo can
   look like success until the next arming.
 - Apply with `make start-rtsp` (foreground; re-reads the file on every
-  arming) or by disarming/arming the vehicle; without a vehicle, use the
-  `--start-now` one-shot path documented in `configure-cameras.md`. Never
+  arming) or by disarming/arming the vehicle; to start the cameras without
+  arming, use the `--start-now` option documented in `configure-cameras.md`. Never
   tell the user the change is live without one of these.
+- Edit the active mode's file only: `cameras-pymavlink.yaml` (`make pymav-up`) or
+  `cameras-uavsdk.yaml` (`make uavsdk-up`). `make check-cameras CAMERAS=<file>` takes the
+  path as seen inside the container (`/home/pipeline-server/configs/<file>`).
 - A live-camera device node can only be used by one camera at a time; check
   the existing cameras before assigning a node that is already in use.
 - If the device path changed or is new, remind the user it must also be set

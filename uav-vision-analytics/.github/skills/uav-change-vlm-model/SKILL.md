@@ -71,8 +71,10 @@ remembered `make vlm-model` invocation.
 
 ## Execution Guardrails
 
-- `make vlm-model` (and a manual `optimum-cli`/`hf download` run) execute on
-  the **host**, in the calling shell — not inside a Docker build. If fetching
+- `make vlm-model` (and a manual `optimum-cli`/`hf download` run) execute from
+  the calling shell on the **host** — not inside a Docker build (`make vlm-model`'s
+  script also starts a short-lived `model-download-ephemeral` container, so Docker
+  access is needed; logs go to `.model_download_logs/`). If fetching
   `download_models.sh` or the model itself hangs or TLS-fails behind a
   corporate proxy, the fix is exporting `http_proxy`/`https_proxy`/`no_proxy`
   in that shell (and trusting the proxy's root CA if it does TLS inspection),
@@ -96,6 +98,11 @@ remembered `make vlm-model` invocation.
 - Apply with `make start-rtsp` or disarm/arm (file re-read at every arming);
   tell the user if a restart is needed for a change to take effect on an
   already-running pipeline.
+- Several VLM instances (different model/device pairs) plus GPU detection share one iGPU. A
+  large model (e.g. Gemma 4 E2B, ~5 GB) added next to other GPU VLMs was observed to fail with
+  `CL_OUT_OF_RESOURCES` and wedge the pipeline server (REST times out; `docker restart
+  uav-va-dlstreamer-pipeline-server` recovers). Trial a new model on one camera first, and
+  note it also needs ~1 min to load on first start.
 - Cameras sharing the same device + model path share one loaded VLM
   instance — changing it affects every camera using that pair; confirm
   before editing a shared model.
@@ -109,7 +116,9 @@ remembered `make vlm-model` invocation.
    affected camera(s).
 3. `make cameras-status` (once armed) shows the camera's pipeline running
    with the captioning branch active.
-4. `mosquitto_sub -h <HOST_IP> -t uav/caption/<id>` receives a new caption
-   roughly every 5 seconds once the pipeline is running.
+4. A caption arrives on `uav/caption/<id>` roughly every 5 seconds once the pipeline is
+   running. Host `mosquitto_sub` is usually not installed; use the broker container:
+   `docker exec uav-va-broker mosquitto_sub -t 'uav/caption/<id>' -C 2` (pymavlink) or
+   `docker exec mqtt-broker mosquitto_sub ...` (UAVSDK).
 5. Caption text reflects the new prompt/model; no truncated or repeated
    captions beyond what `max_new_tokens` would explain.

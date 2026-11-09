@@ -118,7 +118,7 @@ precision can differ between CPU and GPU).
 2. `make check-cameras` — reports `captioning model not found` if the OpenVINO IR folder for
    that device/model is missing; a missing model does not start the camera.
 3. `make start-rtsp` (or disarm/arm the vehicle) to apply — the file is re-read at every arming.
-4. Watch captions: `mosquitto_sub -h <HOST_IP> -t uav/caption/<camera>`.
+4. Watch captions: `docker exec uav-va-broker mosquitto_sub -t uav/caption/<camera>` (`mqtt-broker` in UAVSDK mode).
 
 For a pipeline started by hand (bypassing `camera_config.py`), pass the container path
 in `parameters.captioner_model_path` directly (see `references/PIPELINE.md`).

@@ -29,7 +29,7 @@ Produce:
 - `docker-compose-pymavlink.yml` with all required services, including `nginx` reverse proxy
 - `configs/cameras-pymavlink.yaml` declaring the three cameras above (captioning block only
   on `front_camera` and `bottom_camera`)
-- `configs/config-pymavlink.json` with the fixed 18-pipeline matrix (do not hand-write new
+- `configs/config-pymavlink.json` with the fixed pipeline matrix (do not hand-write new
   pipeline names for these cameras — `uav_object_detection_gpu_gpu`,
   `uav_object_detection_npu`, `uav_object_detection_cpu_cpu` already cover them)
 - `Makefile` with `model`, `vlm-model`, up/down, `check-cameras`, `start-rtsp` targets

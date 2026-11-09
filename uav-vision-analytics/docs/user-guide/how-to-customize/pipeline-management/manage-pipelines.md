@@ -38,9 +38,9 @@ make check-cameras   # validate the camera file and show which pipelines would r
 make start-rtsp      # wait for the vehicle; start on ARM, stop on DISARM
 ```
 
-`CAMERAS=<file>` points both targets at another camera file. The manager
-runs in the foreground; Ctrl+C exits it but leaves already-running pipelines
-up.
+`CAMERAS=<file>` points both targets at another camera file (the path inside the
+container, e.g. `/home/pipeline-server/configs/my.yaml`). The manager runs in the
+foreground; Ctrl+C (or `docker stop`) stops it **and the cameras it started**.
 
 ### Status
 
@@ -54,8 +54,8 @@ the file` after an edit made while armed).
 
 ### Stop
 
-Disarm the vehicle. To stop everything the manager started while it keeps
-waiting for the vehicle, use the REST API
+Disarm the vehicle, or stop the manager (Ctrl+C). To stop pipelines while the
+manager keeps waiting for the vehicle, use the REST API
 [stop-all](#stop-all-running-pipelines) below.
 
 ### Edit the camera file

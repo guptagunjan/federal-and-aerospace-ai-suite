@@ -66,12 +66,11 @@ itself:
 | `device:` live camera | on | `uav_camera_<det>_<vlm>` | same |
 
 `<det>` ∈ `{cpu, gpu, npu}`, `<vlm>` ∈ `{cpu, gpu}` — 3 detection devices ×
-(1 no-caption + 2 caption devices) = 9 combinations, doubled for
-`uav_object_detection_*` vs `uav_camera_*` = **18 pipelines total** in the
-full matrix (`config-pymavlink-realsense.json` carries the remaining
-`uav_camera_*` combinations not shipped by default). `config-uavsdk.json`
-reuses the same 9 `uav_object_detection_*` names with an `rtspsrc` source and
-an `rtsp_url` parameter instead of `video`.
+(1 no-caption + 2 caption devices) = **9 `uav_object_detection_*` pipelines**, shipped in both
+`config-pymavlink.json` and `config-uavsdk.json` (in `config-uavsdk.json` the source is `rtspsrc`
+with an `rtsp_url` parameter instead of `video`). `config-pymavlink.json` also ships the 2 live-camera
+pipelines `uav_camera_npu` / `uav_camera_npu_gpu` (**11 total**); `config-pymavlink-realsense.json`
+carries all 9 `uav_camera_*` combinations to copy from.
 
 A camera whose derived pipeline name is not present in the mounted
 `config.json` is reported by `make check-cameras` as *unavailable* and
@@ -116,9 +115,10 @@ start-request body).
   configuration keeps running (`[config] ... has errors, keeping the previous
   configuration:` followed by every problem, one per line) — a typo never
   leaves the vehicle without video.
-- Without a vehicle: `docker exec -it uav-va-dlstreamer-pipeline-server
+- Without arming the vehicle: `docker exec -it -e HOST_IP="$HOST_IP" uav-va-dlstreamer-pipeline-server
   python3 /home/pipeline-server/scripts/pipeline_manager.py --start-now`
-  starts the cameras immediately; Ctrl+C stops them.
+  starts the cameras immediately. Ctrl+C or SIGTERM (`docker stop`) stops the cameras it
+  started. In UAVSDK mode the SDK's RTSP streams exist only while armed and flying.
 
 ## Live Cameras (RealSense, USB webcams)
 
