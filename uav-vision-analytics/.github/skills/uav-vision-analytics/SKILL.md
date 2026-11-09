@@ -188,9 +188,9 @@ entirely to this skill's `configs/cameras-*.yaml` (see `references/CAMERAS.md`).
   already covers every combination (see `references/CAMERAS.md` and `references/PIPELINE.md`).
   Adding a camera means adding an entry to `configs/cameras-*.yaml`, never editing
   `config.json`.
-- Container names are fixed by `container_name:` (not the service name): `uav-va-dlstreamer-pipeline-server`,
-  `uav-va-nginx`, `uav-va-metrics-manager`, plus `uav-va-broker`, `uav-va-px4`, `uav-va-mavlink-router`
-  in pymavlink mode. Use them in every `docker exec`/`docker logs`.
+- Container names come from `container_name:`, not the service name: `uav-va-dlstreamer-pipeline-server`,
+  `uav-va-nginx`, `uav-va-metrics-manager` (plus `uav-va-broker`, `uav-va-px4`, `uav-va-mavlink-router`
+  in pymavlink mode). Use them in every `docker exec`/`docker logs`.
 - Local REST calls go through nginx and must bypass any shell proxy; model downloads keep it:
   ```bash
   curl -k -s --noproxy '*' "https://${HOST_IP}/pipelines/status"   # local nginx: bypass proxy
@@ -203,34 +203,17 @@ entirely to this skill's `configs/cameras-*.yaml` (see `references/CAMERAS.md`).
 - Captioning devices are `cpu`/`gpu` only — never generate `captioning.device: npu`,
   `gvagenai` has no NPU plugin.
 - `dlstreamer-pipeline-server` MUST NOT publish `8081`/`8555` to the host via `ports:` —
-  it is reached only through the `nginx` reverse proxy (self-signed TLS cert on `443`,
-  `80` redirects to it, raw TCP passthrough for RTSP on `8555`). Use `curl -k` against
-  `https://<HOST_IP>/...`.
-- For pymavlink mode: the `mavlink-router` build `context` MUST point to
-  `./mavlink-router` inside `{{STACK_DIR}}` — copy `Dockerfile` + `main.conf`
-  into the stack; never reference a sibling repo (e.g.
-  `uav-mission-compute-sdk`) as the build context, or `docker compose up`
-  fails with "unable to prepare context: path ... not found" on any machine
-  that hasn't checked out that sibling repo.
-- For pymavlink mode: always generate `10040_sihsim_quadx.post` in `{{STACK_DIR}}`
-  with content `mavlink start -u 14541 -t $(getent hosts mavlink-router | awk '{print $1}')`
-  and mount it into the `px4` service at
-  `/opt/px4/etc/init.d-posix/airframes/10040_sihsim_quadx.post`.
-  Without it PX4 SITL never routes MAVLink to mavlink-router and the pipeline
-  manager blocks forever waiting for a heartbeat.
-- Never include active (non-commented) proxy vars in `.env.example`. `make`
-  exports every variable from `.env`; an empty `http_proxy=` overrides the
-  system proxy from `/etc/environment` and silently breaks `make model` /
-  `make vlm-model` (pip and huggingface-cli lose the corporate proxy). Use
-  commented examples instead: `# http_proxy=`.
-- VSS (Video Search and Summarization) live search over these RTSP streams is a
-  `uav-ground-station` feature, not something this skill builds — if the prompt
-  asks for "search my drone video" or similar, point to `uav-ground-station`'s
-  `make up-vss` and the `vss-live-search` how-to guide instead of generating VSS
-  services in this stack. This skill's job ends at producing a correctly named,
-  continuously running `uav-<camera>` RTSP stream (and, if captioning is
-  enabled, an `uav/caption/<camera>` MQTT topic) that VSS/the ground station can
-  consume.
+  it is reached only through `nginx` (self-signed TLS on `443`, `80` redirects, raw TCP
+  passthrough for RTSP on `8555`).
+- For pymavlink mode (details in `references/DEPLOY.md`): the `mavlink-router` build `context`
+  MUST be `./mavlink-router` inside `{{STACK_DIR}}` (never a sibling repo), and the `px4`
+  service MUST mount `10040_sihsim_quadx.post` — without it PX4 never routes MAVLink and the
+  pipeline manager blocks forever waiting for a heartbeat.
+- Never put active proxy vars in `.env.example` (an empty `http_proxy=` overrides the system
+  proxy and breaks `make model` / `make vlm-model`); use commented examples: `# http_proxy=`.
+- VSS live search is a `uav-ground-station` feature, not built here — for "search my drone
+  video" point to its `make up-vss` and the `vss-live-search` guide. This skill ends at a
+  running `uav-<camera>` RTSP stream (plus `uav/caption/<camera>` MQTT if captioning is on).
 
 ## Generated File Layout
 
@@ -261,13 +244,9 @@ entirely to this skill's `configs/cameras-*.yaml` (see `references/CAMERAS.md`).
 │   ├── models/yolo11s/                    # exported OpenVINO detection model
 │   ├── ov_models/{cpu,gpu}/InternVL2-1B/  # exported OpenVINO VLM (only if any camera captions)
 │   └── videos/*.avi                       # sample video(s) (file source cameras)
-└── tests/
-    ├── conftest.py
-    ├── test_stack_up.py
-    ├── test_pipeline_start.py
-    ├── test_rtsp_stream.py
-    ├── test_mavlink_trigger.py
-    └── test_captioning.py                 # only if any camera has captioning enabled
+└── tests/                             # conftest.py, test_stack_up.py, test_pipeline_start.py,
+                                       # test_rtsp_stream.py, test_mavlink_trigger.py,
+                                       # test_captioning.py (only if any camera captions)
 ```
 
 ## Template Variable Substitution
@@ -287,10 +266,8 @@ docker-compose, or scripts is a syntax error (or, for `cameras-*.yaml`, a
 4. `make check-cameras` reports the camera file as valid and prints the expected
    pipeline/stream-path/detection+captioning table with no unavailable-pipeline warnings.
 5. `make pymav-up` (or `make uavsdk-up`) → all containers `running`, including `nginx`.
-6. A GET on `https://localhost/pipelines` (with a client that accepts the self-signed certificate)
-   returns the registered pipeline definitions
-   (`dlstreamer-pipeline-server` no longer publishes a host port directly — it is reached
-   only through the `nginx` reverse proxy on `443`, which uses a self-signed certificate).
+6. A GET on `https://localhost/pipelines` (client accepting the self-signed certificate)
+   returns the registered pipeline definitions.
 7. Pipeline manager starts with `make start-rtsp` (run in an interactive terminal —
    it uses `docker exec -it` and silently does nothing from a non-interactive
    context) and connects to MAVLink/MQTT. The vehicle is armed from QGroundControl
