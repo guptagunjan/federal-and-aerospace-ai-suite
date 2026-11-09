@@ -71,6 +71,13 @@ remembered `make vlm-model` invocation.
 
 ## Execution Guardrails
 
+- `make vlm-model` (and a manual `optimum-cli`/`hf download` run) execute on
+  the **host**, in the calling shell — not inside a Docker build. If fetching
+  `download_models.sh` or the model itself hangs or TLS-fails behind a
+  corporate proxy, the fix is exporting `http_proxy`/`https_proxy`/`no_proxy`
+  in that shell (and trusting the proxy's root CA if it does TLS inspection),
+  never `curl -k`/`--insecure` against the download host; see
+  `docs/user-guide/how-to-guides/troubleshooting.md#make-model--make-vlm-model-fail-behind-a-corporate-proxy`.
 - Never set `captioning.device: npu` under any circumstance.
 - Do not touch `configs/config-*.json` — captioning model selection is a
   camera-file change (`captioning.model`/`captioning.device`); the pipeline

@@ -76,8 +76,11 @@ DL Streamer Pipeline Server  (config-{pymavlink,uavsdk}.json: 18 fixed pipelines
   nginx reverse proxy (TLS, self-signed) :443/:80 → REST+UI; :8555 → RTSP passthrough
          │
          ▼
-  QGC / ffplay / browser          uav-ground-station (VSS indexes uav-<camera> RTSP;
-                                   out of scope for this skill, see docs)
+  QGC / ffplay / browser          uav-ground-station (separate machine/skill — the
+                                   dashboard connects to this host's IP and relays
+                                   uav-<camera> RTSP + uav/caption/<camera> MQTT;
+                                   its own VSS overlay indexes that RTSP for search.
+                                   Out of scope for this skill; see `uav-ground-station`.)
 
 MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
 ```
@@ -136,6 +139,18 @@ MAVLink/MQTT → Pipeline Manager → start/stop pipelines on ARMED/DISARMED
 4. VLM model [`InternVL2-1B`] (only asked if any camera has captioning enabled)
 5. Output directory [`./uav-stack`]
 6. UAV ID (UAVSDK mode only) [`uav-1`]
+7. Also deploy the remote viewer/dashboard (`uav-ground-station`) to watch this
+   stack's video/captions from another machine, optionally with natural-language
+   video search? [no] (`no` / `basic` / `with VSS search`)
+
+If (7) is anything other than `no`, complete this skill first, then hand off
+to the separate **`uav-ground-station`** skill, passing this stack's
+reachable host IP as its `VIZ_COMPANION_HOST` — do not fold its steps into
+this skill or skip straight to `docker compose up` on the ground-station
+repo without that skill's own guardrails (VSS env-var checks, model-download
+warning, etc.). There is no "physical camera" or other deployment *mode*
+toggle in `uav-ground-station` itself — camera/source choices belong
+entirely to this skill's `configs/cameras-*.yaml` (see `references/CAMERAS.md`).
 
 ## Parameter Validation (enforce BEFORE file generation)
 
@@ -269,7 +284,11 @@ docker-compose, or scripts is a syntax error (or, for `cameras-*.yaml`, a
    returns the registered pipeline definitions
    (`dlstreamer-pipeline-server` no longer publishes a host port directly — it is reached
    only through the `nginx` reverse proxy on `443`, which uses a self-signed certificate).
-7. Pipeline manager starts with `make start-rtsp` and connects to MAVLink/MQTT.
+7. Pipeline manager starts with `make start-rtsp` (run in an interactive terminal —
+   it uses `docker exec -it` and silently does nothing from a non-interactive
+   script/CI context; use `docker exec -d <dlstreamer-pipeline-server container>
+   python3 /home/pipeline-server/scripts/pipeline_manager.py --start-now` for
+   non-interactive validation instead) and connects to MAVLink/MQTT.
 8. On ARMED signal: pipelines start; RTSP streams appear at `:8555` as `uav-<camera>`.
 9. `ffplay rtsp://localhost:8555/uav-<camera>` shows annotated video with telemetry overlay.
 10. For a captioning-enabled camera: `uav/caption/<camera>` on MQTT receives a new caption
@@ -278,3 +297,8 @@ docker-compose, or scripts is a syntax error (or, for `cameras-*.yaml`, a
 12. On UAVSDK mode: pipelines start only after RTSP probe confirms streams are live.
 13. `make pymav-down` (or `make uavsdk-down`) cleanly stops all containers.
 14. `pytest -q tests/` passes all tests.
+15. If question 7 above was anything other than `no`: the `uav-ground-station`
+    skill was invoked separately afterward, with this stack's reachable IP passed
+    as its `VIZ_COMPANION_HOST`, and its own completion criteria were met
+    (dashboard reachable, camera card(s) visible once armed, Search panel present
+    only if `with VSS search` was chosen).

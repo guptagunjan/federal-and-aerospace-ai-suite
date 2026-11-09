@@ -217,7 +217,18 @@ cd ../uav-ground-station
 make up
 ```
 
-Then open `http://<VIZ_HOST_IP>:8080` (the address `make up` detected, see the ground station's `.env`), enter the **UAV host's IP** (the `HOST_IP` of this application's `.env`, `<HOST_IP>` above) and press **Connect**. The camera cards appear once the cameras run (after the vehicle is armed). The ground-station machine must reach ports `443`, `1883` and `8555` of this host. See the [UAV Ground Station README](../../../../uav-ground-station/README.md) for all options.
+Then open `http://<VIZ_HOST_IP>:8080` (the address `make init`, run automatically by `make up`, detected -- see the ground station's `.env`), enter the **UAV host's IP** (the `HOST_IP` of this application's `.env`, `<HOST_IP>` above) and press **Connect**. The camera cards appear once the cameras run (after the vehicle is armed). The ground-station machine must reach ports `443`, `1883` and `8555` of this host. See the [UAV Ground Station README](../../../../uav-ground-station/README.md) for all options.
+
+> [!NOTE]
+> `make up` shows video, captions, Flight Summary, and per-host metrics only.
+> For the dashboard's **Search Videos** button and natural-language search
+> over indexed footage, run `make up-vss` instead of `make up` (it brings up
+> everything `make up` does, plus 8 extra VSS containers) -- it needs its own
+> required `.env` variables first (MinIO/Postgres credentials, an embedding
+> model, and a detection model). See [VSS search in the UAV Ground Station
+> README](../../../../uav-ground-station/README.md#vss-search), and
+> [tune VSS search results](../how-to-customize/search-tuning/vss-search-tuning.md)
+> once it's running.
 
 > [!NOTE]
 > Other ways to view the stream:

@@ -111,15 +111,39 @@ make up      # creates .env from template (host IP and devices auto-detected), b
 machine's LAN IP and detects the GPU/NPU devices; edit `.env` only to override them
 (for example `127.0.0.1` for loopback-only access).
 
+> [!NOTE]
+> `make up` starts only the viewer + mediamtx relay (video, captions, metrics,
+> Flight Summary) -- the **Search Videos** button and `/api/search*` stay
+> hidden/`404` until the separate VSS overlay is started with `make up-vss`
+> *instead of* `make up` (it is not a flag to `make up`). See
+> [VSS search](#vss-search) below for the extra `.env` variables it needs
+> and exactly what `make up-vss` adds.\
+> `make up-vss` always includes everything `make up` does (viewer + mediamtx
+> + the 8 VSS containers), so you only ever run one or the other, not both.\
+> Started with plain `make up` and want Search later? Just run `make up-vss`
+> -- it brings up the same viewer/mediamtx containers (unchanged, so this is
+> fast) plus the missing VSS ones, in place.\
+> Dashboard, video, captions, Flight Summary and per-host metrics work the
+> same either way -- only Search Videos depends on which one you ran. Tear
+> down with the matching command: `make down` after `make up`, `make down-vss`
+> after `make up-vss` (see the [!IMPORTANT] note below `make down`).
+
 Then open `http://<VIZ_HOST_IP>:8080` (`http://localhost:8080` when `VIZ_HOST_IP` is `127.0.0.1`), enter the
 UAV host's IP (defaults to `VIZ_COMPANION_HOST`, `127.0.0.1`), and press **Connect**. Device cards
 (`cpu`/`gpu`/`npu`) are detected automatically from whichever pipelines are
 currently running on the remote host.
 
 ```bash
-make down    # stop and remove the stack
+make down    # stop and remove the stack started with make up
 make logs    # tail the container's logs
 ```
+
+> [!IMPORTANT]
+> If you started with `make up-vss`, tear down with `make down-vss` (or
+> `make clean-vss-index` / `make delete-vss-volumes` -- see
+> [VSS search](#vss-search)), not plain `make down`: `make down` only
+> targets `docker-compose.yml` + `docker-compose-mediamtx.yml` and leaves
+> the 8 `uav-gs-vss-*` containers from `docker-compose-vss.yml` running.
 
 
 ## Configuration
@@ -144,7 +168,7 @@ All configuration is via `.env` (see `.env.example`):
 | `VSS_MANAGER_PORT` | `3001` | Host port (bound to `VIZ_HOST_IP`) for the VSS pipeline-manager API |
 | `VIDEO_GROUP_ID` / `RENDER_GROUP_ID` | `44` / `992` | Host's `video`/`render` group ids (`getent group video render`; `make init` does not set them), needed for GPU/NPU VSS devices |
 | `VSS_EMBEDDING_MODEL` | _(required with `make up-vss`)_ | Embedding model VSS uses for frames and queries, for example `CLIP/clip-vit-b-32` |
-| `DATAPREP_DETECTION_MODEL` | _(required with `make up-vss`)_ | Object detection model VSS dataprep uses for crop extraction, for example `yolox_s` |
+| `DATAPREP_DETECTION_MODEL` | _(required with `make up-vss`)_ | Object detection model VSS dataprep uses for crop extraction. Must be a Hugging Face OpenVINO Model API repo in the `OpenVINO/` namespace, for example `OpenVINO/yolox_s-int8-ov` (see [troubleshooting](../uav-vision-analytics/docs/user-guide/how-to-guides/troubleshooting.md#vss)) |
 | `VSS_ENABLE_OBJECT_DETECTION` | `true` | Run object-detection crops alongside embedding during ingestion |
 | `VSS_INGEST_EMBEDDING_DEVICE` / `VSS_DETECTION_DEVICE` / `VSS_QUERY_EMBEDDING_DEVICE` | `CPU` | Devices for VSS indexing, object detection and query embedding |
 | `VSS_FRAME_INTERVAL` | `15` | Live ingest embeds one frame every N frames |
@@ -189,10 +213,17 @@ and the search routes return 404.
    VSS_POSTGRES_USER=vssuser
    VSS_POSTGRES_PASSWORD=<your password>
    VSS_EMBEDDING_MODEL=CLIP/clip-vit-b-32
-   DATAPREP_DETECTION_MODEL=yolox_s
+   DATAPREP_DETECTION_MODEL=OpenVINO/yolox_s-int8-ov
    ```
-2. `make up-vss` (base + mediamtx + VSS overlay). The first start downloads
-   the CLIP embedding model (and YOLOX, for object crops) into Docker volumes.
+
+   > [!IMPORTANT]
+   > `DATAPREP_DETECTION_MODEL` must be a Hugging Face **OpenVINO Model API**
+   > repo under the `OpenVINO/` namespace (`OpenVINO/yolox_s-int8-ov` above).
+2. `make up-vss` (base + mediamtx + VSS overlay; use this instead of plain
+   `make up` whenever Live Natural Language Search is wanted -- `make up`
+   alone never starts the 8 VSS containers or exposes the Search UI). The
+   first start downloads the CLIP embedding model (and the YOLOX detection
+   model, for object crops) into Docker volumes.
 3. Open the dashboard and **Connect** to the UAV. Every RUNNING pipeline
    (`uav-<camera>` on `VIZ_REMOTE_RTSP_PORT`) is registered with VSS
    as a live stream and indexed continuously. A backend loop

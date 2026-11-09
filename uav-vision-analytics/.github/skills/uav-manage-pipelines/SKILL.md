@@ -79,6 +79,19 @@ payload.
 - The REST API is reached only through nginx at `https://<HOST_IP>/` with a
   self-signed certificate (`curl -k`) — `dlstreamer-pipeline-server`'s own
   port is not published to the host; never suggest a direct `:8081` URL.
+- If a REST call hangs or gets an unrelated `403`/proxy error even though the
+  stack is healthy, a shell-level `http_proxy`/`https_proxy` is likely
+  routing local/LAN traffic through a corporate proxy that can't reach
+  `HOST_IP`. Exclude it the same way `benchmark/calc_stream_density.sh` does:
+  `unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY; export no_proxy="*"`
+  before calling `curl`. See
+  `docs/user-guide/how-to-guides/troubleshooting.md#pipelines`.
+- `GET /pipelines/status` retains every instance's history (`COMPLETED`,
+  `ERROR`, `ABORTED`) until the container restarts — it never shrinks back
+  down on its own. Any script that counts/stops pipelines must filter on
+  `state`, never trust raw array length: `state in ("RUNNING", "QUEUED",
+  "STARTING")` for active/stoppable instances, `state == "RUNNING"` only
+  when averaging FPS/throughput.
 - Never add, remove, or rename a pipeline just to support a new camera
   combination that's actually a `configs/cameras-*.yaml` concern — check
   with `uav-manage-cameras`'s scope first; only touch `config-*.json` when
@@ -96,8 +109,20 @@ payload.
   config; then `make start-rtsp` to restart the pipeline manager.
 - Stopping a pipeline through the manager means disarming the vehicle; to
   stop everything the manager started while it keeps waiting for the
-  vehicle, use the REST stop-all endpoint, not `docker stop` on the
-  container (which also kills the manager).
+  vehicle, use the REST [stop-all loop](../../docs/user-guide/how-to-customize/pipeline-management/manage-pipelines.md#stop-all-running-pipelines)
+  (there is no single stop-all endpoint, and `pipeline_manager.py` itself
+  has no `--stop-all` flag — only `--config`, `--start-now`, `--status`),
+  not `docker stop` on the container (which also kills the manager).
+- `make start-rtsp` runs `docker exec -it ...` and needs a real terminal —
+  launched from a non-interactive context (a background/CI script, `nohup`,
+  a non-tty SSH session) it fails with "cannot attach stdin to a TTY-enabled
+  container" and, because the Makefile recipe is prefixed `-` (ignore
+  errors), `make` still exits `0`, silently leaving no manager running.
+  For any non-interactive validation/automation, start the manager with
+  `docker exec -d <dlstreamer-pipeline-server container> python3
+  /home/pipeline-server/scripts/pipeline_manager.py --start-now` instead (no
+  vehicle required — see `references/CAMERAS.md`), and confirm with
+  `make cameras-status`, not by trusting the launch command's own exit code.
 - Report exact REST calls and file edits made; never run
   `make pymav-down`/`make uavsdk-down` without the user's confirmation, since
   it drops every currently-streaming camera.
@@ -106,11 +131,17 @@ payload.
 
 1. For a manual start: the REST call returns an `instance_id`, and
    `GET /pipelines/{instance_id}/status` reports `RUNNING`.
-2. For a manual stop: `DELETE /pipelines/{instance_id}` succeeds and the
-   instance no longer appears in a subsequent status list.
+2. For a manual stop: `DELETE /pipelines/{instance_id}` succeeds and a
+   subsequent status check shows that `id`'s `state` as `ABORTED`/`COMPLETED`,
+   not `RUNNING`/`QUEUED`/`STARTING` — the entry itself never disappears from
+   `/pipelines/status` (history is retained until container restart), so
+   "no longer in the list" is the wrong check; "no longer counted as active"
+   is the right one.
 3. For an element/parameter edit: the container was recreated (not just
-   restarted), `make start-rtsp` reconnects, and `make cameras-status` shows
-   the affected camera(s) running the updated pipeline.
+   restarted), the pipeline manager was restarted with a method appropriate
+   to how it's being run (interactive `make start-rtsp`, or `docker exec -d
+   ... --start-now` for non-interactive validation), and `make
+   cameras-status` shows the affected camera(s) running the updated pipeline.
 4. For a new parameter: a start request setting it is accepted (no `400`),
    and the resulting pipeline behaves as expected (verified via RTSP output,
    MQTT metadata, or the detection log as appropriate).

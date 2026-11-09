@@ -70,6 +70,12 @@ between app releases; do not hardcode a remembered command.
 
 ## Execution Guardrails
 
+- `make model` (and a manual `yolo export`/`optimum-cli` run) execute on the
+  **host**, in the calling shell — not inside a Docker build. If a download
+  hangs or TLS-fails behind a corporate proxy, the fix is exporting
+  `http_proxy`/`https_proxy`/`no_proxy` in that shell (and trusting the
+  proxy's root CA if it does TLS inspection), not a Docker build arg; see
+  `docs/user-guide/how-to-guides/troubleshooting.md#make-model--make-vlm-model-fail-behind-a-corporate-proxy`.
 - Never invent export flags — use exactly what `model.md`/`modify-model.md`
   in the target repo specifies (e.g. `dynamic=True opset=18 imgsz=640
   half=True`), since these are tuned for the pipelines' expectations.

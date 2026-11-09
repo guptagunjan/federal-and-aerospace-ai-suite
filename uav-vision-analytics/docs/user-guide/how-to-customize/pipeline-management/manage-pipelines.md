@@ -160,12 +160,24 @@ does this automatically).
 
 ```bash
 for id in $(curl -k -s https://<HOST_IP>/pipelines/status | python3 -c \
-  "import json,sys; print(' '.join(p['id'] for p in json.load(sys.stdin) if p.get('state')=='RUNNING'))"); do
+  "import json,sys; print(' '.join(p['id'] for p in json.load(sys.stdin) if p.get('state') in ('RUNNING', 'QUEUED', 'STARTING')))"); do
   curl -k -s -X DELETE https://<HOST_IP>/pipelines/$id
 done
 ```
 
 This also stops pipelines started by the manager. `make pymav-down` / `make uavsdk-down` stops the whole stack instead.
+
+> [!NOTE]
+> `/pipelines/status` keeps every instance's history (`COMPLETED`, `ERROR`,
+> `ABORTED`) until the container restarts — it does not shrink back down
+> after you `DELETE` an instance or a camera disarms. Always filter on
+> `state` for anything that counts pipelines (active-stream counts,
+> throughput averages, "is anything still running" checks); never trust the
+> raw array length. `benchmark/calc_stream_density.sh` does this: `state ==
+> "RUNNING"` only when averaging FPS, `state in ("RUNNING", "QUEUED",
+> "STARTING")` when counting/stopping active instances. See
+> [Troubleshooting — `/pipelines/status` keeps old pipeline
+> entries](../../how-to-guides/troubleshooting.md#pipelinesstatus-keeps-old-pipeline-entries-after-they-were-stopped).
 
 ## Troubleshooting
 
