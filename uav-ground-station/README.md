@@ -167,8 +167,8 @@ All configuration is via `.env` (see `.env.example`):
 | `VSS_ENABLED` / `VSS_MANAGER_URL` / `VSS_DATASTORE_URL` | `false` / `http://host.docker.internal:12345/manager` / `.../datastore` | Only for a VSS deployed separately; `make up-vss` sets them itself |
 | `VSS_MANAGER_PORT` | `3001` | Host port (bound to `VIZ_HOST_IP`) for the VSS pipeline-manager API |
 | `VIDEO_GROUP_ID` / `RENDER_GROUP_ID` | `44` / `992` | Host's `video`/`render` group ids (`getent group video render`; `make init` does not set them), needed for GPU/NPU VSS devices |
-| `VSS_EMBEDDING_MODEL` | `CLIP/clip-vit-b-32` (`make init` pre-fills this) | Embedding model VSS uses for frames and queries; edit `.env` before `make up-vss` for a different model |
-| `DATAPREP_DETECTION_MODEL` | `OpenVINO/yolox_s-int8-ov` (`make init` pre-fills this) | Object detection model VSS dataprep uses for crop extraction. Must be a Hugging Face OpenVINO Model API repo in the `OpenVINO/` namespace |
+| `VSS_EMBEDDING_MODEL` | `CLIP/clip-vit-b-32` (`make init` pre-fills this only after confirming the download prompt, `ACCEPT_VSS_MODELS=y` to skip it) | Embedding model VSS uses for frames and queries; edit `.env` before `make up-vss` for a different model |
+| `DATAPREP_DETECTION_MODEL` | `OpenVINO/yolox_s-int8-ov` (`make init` pre-fills this only after confirming the download prompt, `ACCEPT_VSS_MODELS=y` to skip it) | Object detection model VSS dataprep uses for crop extraction. Must be a Hugging Face OpenVINO Model API repo in the `OpenVINO/` namespace |
 | `VSS_ENABLE_OBJECT_DETECTION` | `true` | Run object-detection crops alongside embedding during ingestion |
 | `VSS_INGEST_EMBEDDING_DEVICE` / `VSS_DETECTION_DEVICE` / `VSS_QUERY_EMBEDDING_DEVICE` | `CPU` | Devices for VSS indexing, object detection and query embedding |
 | `VSS_FRAME_INTERVAL` | `15` | Live ingest embeds one frame every N frames |
@@ -205,19 +205,21 @@ and the search routes return 404.
 1. `make init` (run once, on first setup) already takes care of auto-generating
    the `VSS_MINIO_*` / `VSS_POSTGRES_*` credentials (a fixed username and a
    random password -- these are internal to this stack's own MinIO/Postgres
-   containers only, never exposed outside the docker network) and pre-fills
-   `VSS_EMBEDDING_MODEL=CLIP/clip-vit-b-32` /
-   `DATAPREP_DETECTION_MODEL=OpenVINO/yolox_s-int8-ov` into `.env`. Nothing
-   to edit if these defaults are fine for you.
-   Only edit `.env` yourself first if you want different credentials/models
-   -- see `.env.example` for the full set of VSS variables (optional devices
-   included):
+   containers only, never exposed outside the docker network). For
+   `VSS_EMBEDDING_MODEL` / `DATAPREP_DETECTION_MODEL` it shows the two
+   Hugging Face models that would be downloaded (and their license pages) and
+   asks for confirmation -- nothing is downloaded or pre-filled into `.env`
+   without saying yes.
+
+   Only edit `.env` by yourself if you want different credentials or
+   declined the model prompt -- see `.env.example` for the full set of VSS
+   variables (optional devices included):
 
    ```bash
-   VSS_MINIO_USER=minioadmin
-   VSS_MINIO_PASSWORD=<at least 8 characters>
-   VSS_POSTGRES_USER=vssuser
-   VSS_POSTGRES_PASSWORD=<your password>
+   VSS_MINIO_USER=vss-admin
+   VSS_MINIO_PASSWORD=<random characters>
+   VSS_POSTGRES_USER=vss
+   VSS_POSTGRES_PASSWORD=<random characters>
    VSS_EMBEDDING_MODEL=CLIP/clip-vit-b-32
    DATAPREP_DETECTION_MODEL=OpenVINO/yolox_s-int8-ov
    ```
