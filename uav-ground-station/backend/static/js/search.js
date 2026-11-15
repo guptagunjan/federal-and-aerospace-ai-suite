@@ -23,11 +23,13 @@
 
   let inFlight = null;
   let lastFocus = null;
-  // Every result the last query returned from the backend, unfiltered --
-  // the "UAV"/"Camera" selects narrow this down to `results` (below) purely
-  // client-side, rather than re-querying the backend.
+  // Every result the last query returned from the backend, for all UAVs and
+  // cameras -- the "UAV"/"Camera" selects narrow this down to `results` (below)
+  // purely client-side, without searching again.
   let allResults = [];
   let results = [];
+  let matchedCount = 0;
+  let maxResults = Infinity;
   let filteredOutCount = 0;
   let filter = "all";
   let selectedIndex = -1;
@@ -318,6 +320,10 @@
       addFact(r.source === "live" ? "Within segment" : "Clip", `${formatTime(r.segment_start)} – ${formatTime(r.segment_end)}`);
     }
     if (r.seek_timestamp != null) addFact("Best match", formatTime(r.seek_timestamp));
+    if (r.detected_label) {
+      const conf = r.detection_confidence != null ? ` (${Math.round(r.detection_confidence * 100)}% confidence)` : "";
+      addFact("Matched object", `${r.detected_label.replace(/_/g, " ")}${conf}`);
+    }
     if (r.tags && r.tags.length) addFact("Tags", r.tags.join(", "));
     info.appendChild(facts);
 
@@ -427,7 +433,9 @@
 
   function renderFilterBar(counts) {
     const bar = el("div", "results-toolbar");
-    bar.appendChild(el("span", "results-count", `${results.length} result${results.length === 1 ? "" : "s"}`));
+    bar.appendChild(el("span", "results-count", matchedCount > results.length
+      ? `Top ${results.length} of ${matchedCount} results`
+      : `${results.length} result${results.length === 1 ? "" : "s"}`));
     if (counts.live && counts.upload) {
       const seg = el("div", "segmented");
       [["all", `All ${results.length}`], ["upload", `Uploads ${counts.upload}`], ["live", `Live ${counts.live}`]].forEach(([key, label]) => {
@@ -504,6 +512,8 @@
       if (camera && r.camera !== camera) return false;
       return true;
     });
+    matchedCount = results.length;
+    results = results.slice(0, maxResults);
     selectedIndex = -1;
     if (!allResults.length) return; // nothing searched yet -- let runSearch's own messaging stand
     if (!results.length) {
@@ -546,6 +556,7 @@
         return;
       }
       allResults = (data && data.results) || [];
+      maxResults = Number.isFinite(data && data.max_results) ? data.max_results : Infinity;
       filteredOutCount = (data && data.filtered_out) || 0;
       if (!allResults.length) {
         const detail = filteredOutCount > 0
@@ -706,19 +717,20 @@
   // (one per tab), tracks all of them independently; this panel only ever
   // shows the currently active tab's host, set from the uav:connected event detail.
   let liveSyncHost = null;
+  let lastLivePayload = null;
 
-  // `data` is the full /api/search/live-sync response: { hosts: {host: {...}}, ... }
-  // plus a legacy top-level mirror of one host for callers not yet updated.
-  // Pick out `liveSyncHost`'s own state when known; fall back to the legacy
-  // mirror (single-UAV deployments, or before any host is known here).
+  // `data` is the full /api/search/live-sync response: { hosts: {host: {...}}, ... }.
+  // Only the shown tab's own state is used: the legacy top-level mirror in the
+  // response describes whichever host happens to be tracked first.
   function stateFor(data) {
-    if (data && data.hosts && liveSyncHost && data.hosts[liveSyncHost]) return data.hosts[liveSyncHost];
-    return data;
+    if (data && data.hosts && liveSyncHost) return data.hosts[liveSyncHost] || null;
+    return null;
   }
 
   function renderLiveSync(payload) {
     if (!liveSummary || !liveList) return;
-    const data = stateFor(payload);
+    if (payload) lastLivePayload = payload;
+    const data = stateFor(lastLivePayload);
     const streams = (data && data.streams) || [];
     liveList.replaceChildren(...streams.map((st) => {
       const li = document.createElement("li");
@@ -739,10 +751,18 @@
       return li;
     }));
     const running = streams.filter((st) => st.state === "running").length;
-    if (!data || !data.host) liveSummary.textContent = streams.length ? "paused \u2014 connect to a UAV to resume" : "connect to a UAV to start";
-    else if (data.last_error && !streams.length) liveSummary.textContent = "sync error";
-    else liveSummary.textContent = `${running} of ${streams.length} feed${streams.length === 1 ? "" : "s"} live`;
-    liveSummary.title = (data && data.last_error) || "";
+    const queued = streams.filter((st) => st.state === "queued").length;
+    const capacity = lastLivePayload && lastLivePayload.capacity;
+    if (!liveSyncHost) liveSummary.textContent = "connect to a UAV to start";
+    else if (!data || !data.last_sync) liveSummary.textContent = "checking feeds\u2026";
+    else if (data.last_error && !streams.length) liveSummary.textContent = "VSS not ready \u2014 retrying\u2026";
+    else if (!streams.length) liveSummary.textContent = "waiting for running cameras\u2026";
+    else {
+      liveSummary.textContent = `${running} of ${streams.length} feed${streams.length === 1 ? "" : "s"} live` +
+        (queued ? ` \u00b7 ${queued} queued` : "");
+    }
+    liveSummary.title = (data && data.last_error)
+      || (queued && capacity ? `VSS indexes at most ${capacity.limit} live streams at once; queued feeds start when a slot frees up.` : "");
   }
 
   async function liveSync(method, body) {
@@ -766,10 +786,15 @@
   // are actually connected right now.
   document.addEventListener("uav:connected", async (e) => {
     if (!(await availability)) return;
-    clearInterval(livePollTimer);
-    liveSyncHost = e.detail.host;
-    await liveSync("POST", { host: e.detail.host });
-    livePollTimer = setInterval(() => liveSync("GET"), 10000);
+    const host = e.detail.host;
+    // A tab restored in the background must not take over the panel.
+    if (!e.detail.background) {
+      liveSyncHost = host;
+      renderLiveSync(null);
+      clearInterval(livePollTimer);
+      livePollTimer = setInterval(() => liveSync("GET"), 3000);
+    }
+    await liveSync("POST", { host });
     if (isOpen()) populateSourceFilters();
   });
   document.addEventListener("uav:disconnected", async (e) => {
@@ -784,6 +809,7 @@
       clearInterval(livePollTimer);
       livePollTimer = null;
       liveSyncHost = null;
+      renderLiveSync(null);
     }
   });
   closeBtn.addEventListener("click", closeModal);

@@ -65,7 +65,8 @@ do not hardcode a remembered default.
 | Setting | Rule | Why |
 | --- | --- | --- |
 | `VSS_SEARCH_MIN_PEAK_SCORE`, `VSS_SEARCH_RELATIVE_CUTOFF` | numeric, `0`–`1` | calibrated for the embedding model in use; `0` disables that filter |
-| `VSS_MAX_RESULTS` | positive integer | raising it slows queries (more windows scored) |
+| `VSS_MAX_RESULTS` | positive integer | most results the popup lists; raising it slows queries (more windows scored) |
+| `VSS_LIVE_STREAM_MAX_CONCURRENT` | positive integer | live feeds VSS indexes at once; extra feeds show as `queued`, raising it adds CPU/GPU load |
 | `VSS_FRAME_INTERVAL` | positive integer | lower = finer time resolution, more CPU/GPU/storage |
 | `VSS_INGEST_EMBEDDING_DEVICE` / `VSS_DETECTION_DEVICE` / `VSS_QUERY_EMBEDDING_DEVICE` | `CPU`/`GPU`/`NPU` | GPU/NPU need the matching `GPU_DEVICE`/`GPU_RENDER_DEVICE`/`NPU_DEVICE` and group IDs already set in `.env` |
 | `VSS_EMBEDDING_MODEL` | required, no default | `make up-vss` fails fast if unset; changing it invalidates the existing index and the `MIN_PEAK_SCORE` calibration |

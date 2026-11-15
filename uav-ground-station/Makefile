@@ -58,6 +58,11 @@ init: ## Create .env from template if missing, and auto-detect host IP and GPU/N
 		sed -i "s|^VSS_POSTGRES_USER=.*|VSS_POSTGRES_USER=vss|" .env; \
 		sed -i "s|^VSS_POSTGRES_PASSWORD=.*|VSS_POSTGRES_PASSWORD=$$(openssl rand -hex 16)|" .env; \
 		echo "   ✅ VSS_MINIO_USER / VSS_MINIO_PASSWORD / VSS_POSTGRES_USER / VSS_POSTGRES_PASSWORD set"; \
+		if docker volume ls -q 2>/dev/null | grep -q '_vss-pg-data$$'; then \
+			echo "   ⚠  A VSS database from an earlier deployment still exists and keeps its old password,"; \
+			echo "      so VSS would fail to start. Run 'make clean-vss-index' to start with an empty"; \
+			echo "      index, or put the previous VSS_POSTGRES_PASSWORD back into .env."; \
+		fi; \
 		echo ""; \
 		echo "[init] VSS downloads two Hugging Face models the first time 'make up-vss' runs"; \
 		echo "       (by the vss-dataprep/vss-embedding containers), subject to their"; \
@@ -107,8 +112,12 @@ _build_if_changed:
 		fi; \
 	fi
 
+# Recipes source .env because make exports the values it read at startup, which would otherwise
+# override a change made to .env by an earlier prerequisite (for example DEVICE=).
 up: init _build_if_changed ## Start the ground-station viewer + mediamtx relay sidecar (H.264 Relay mode); builds viz-backend only if missing or changed
-	docker compose -f docker-compose.yml -f docker-compose-mediamtx.yml up -d --no-build
+	@set -a; . ./.env; set +a; \
+	docker compose -f docker-compose.yml -f docker-compose-mediamtx.yml up -d --no-build && \
+	echo "" && echo "✅ UAV ground station is up. Open the dashboard at: http://$$VIZ_HOST_IP:$${VIZ_PORT:-8080}"
 
 down: ## Stop and remove the ground-station viewer + mediamtx relay sidecar
 	docker compose -f docker-compose.yml -f docker-compose-mediamtx.yml down -v
@@ -133,10 +142,46 @@ _check_vss_env:
 		exit 1; \
 	fi
 
-up-vss: init _check_vss_env _build_if_changed ## Relay mode + VSS search containers (enables Live Natural Language Search)
-	$(VSS_COMPOSE) up -d --no-build
-	@echo ""; \
-	echo "✅ UAV ground station is up. Open the dashboard at: http://$(VIZ_HOST_IP):$(or $(VIZ_PORT),8080)"
+# make up-vss DEVICE=CPU|GPU|NPU|all -- sets VSS_INGEST_EMBEDDING_DEVICE,
+# VSS_DETECTION_DEVICE and VSS_QUERY_EMBEDDING_DEVICE together in .env so you
+# don't have to hand-edit three variables (see docs/user-guide/how-to-guides/vss-live-search.md).
+# DEVICE=all auto-picks the best hardware `make init` already detected (GPU if
+# GPU_DEVICE isn't /dev/null, else NPU if NPU_DEVICE isn't /dev/null, else CPU).
+# Omit DEVICE entirely to leave whatever is already in .env untouched.
+_set_vss_device:
+	@if [ -n "$(DEVICE)" ]; then \
+		dev=$$(echo "$(DEVICE)" | tr '[:lower:]' '[:upper:]'); \
+		case "$$dev" in \
+			ALL) \
+				. ./.env 2>/dev/null; \
+				if [ -n "$$GPU_DEVICE" ] && [ "$$GPU_DEVICE" != "/dev/null" ]; then dev=GPU; \
+				elif [ -n "$$NPU_DEVICE" ] && [ "$$NPU_DEVICE" != "/dev/null" ]; then dev=NPU; \
+				else dev=CPU; fi; \
+				echo "[up-vss] DEVICE=all -> auto-selected $$dev from hardware detected by 'make init'"; \
+				;; \
+			CPU|GPU|NPU) ;; \
+			*) echo "ERROR: DEVICE must be one of CPU, GPU, NPU, all (got '$(DEVICE)')" >&2; exit 1 ;; \
+		esac; \
+		if [ "$$dev" = "GPU" ] && { [ -z "$$GPU_DEVICE" ] || [ "$$GPU_DEVICE" = "/dev/null" ]; }; then \
+			echo "⚠  DEVICE=GPU requested but no GPU was detected by 'make init' (GPU_DEVICE=/dev/null)."; \
+			echo "   Setting the VSS device variables to GPU anyway; containers will fail to start"; \
+			echo "   without a real GPU_DEVICE/GPU_RENDER_DEVICE. Re-run 'make init' on GPU hardware first."; \
+		fi; \
+		if [ "$$dev" = "NPU" ] && { [ -z "$$NPU_DEVICE" ] || [ "$$NPU_DEVICE" = "/dev/null" ]; }; then \
+			echo "⚠  DEVICE=NPU requested but no NPU was detected by 'make init' (NPU_DEVICE=/dev/null)."; \
+			echo "   Setting the VSS device variables to NPU anyway; containers will fail to start"; \
+			echo "   without a real NPU_DEVICE. Re-run 'make init' on NPU hardware first."; \
+		fi; \
+		sed -i "s|^VSS_INGEST_EMBEDDING_DEVICE=.*|VSS_INGEST_EMBEDDING_DEVICE=$$dev|" .env; \
+		sed -i "s|^VSS_DETECTION_DEVICE=.*|VSS_DETECTION_DEVICE=$$dev|" .env; \
+		sed -i "s|^VSS_QUERY_EMBEDDING_DEVICE=.*|VSS_QUERY_EMBEDDING_DEVICE=$$dev|" .env; \
+		echo "✅ VSS_INGEST_EMBEDDING_DEVICE / VSS_DETECTION_DEVICE / VSS_QUERY_EMBEDDING_DEVICE set to $$dev in .env"; \
+	fi
+
+up-vss: init _set_vss_device _check_vss_env _build_if_changed ## Relay mode + VSS search containers (enables Live Natural Language Search). DEVICE=CPU|GPU|NPU|all to pick the inference device
+	@set -a; . ./.env; set +a; \
+	$(VSS_COMPOSE) up -d --no-build && \
+	echo "" && echo "✅ UAV ground station is up. Open the dashboard at: http://$$VIZ_HOST_IP:$${VIZ_PORT:-8080}"
 
 down-vss: ## Stop the relay + VSS stack, keeping indexed footage/embeddings
 	$(VSS_COMPOSE) down

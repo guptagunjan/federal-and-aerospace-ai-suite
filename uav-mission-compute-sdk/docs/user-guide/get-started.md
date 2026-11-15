@@ -261,7 +261,7 @@ make down && make up-sim-camera
 **View RTSP streams directly**:
 ```bash
 # Install ffmpeg if needed: sudo apt install ffmpeg
-ffplay rtsp://localhost:8554/uav-1/nadir           # Raw feed (needs a local display)
+ffplay -rtsp_transport tcp rtsp://localhost:8554/uav-1/nadir           # Raw feed (needs a local display)
 
 # Headless alternative — record N seconds to a file instead of live-viewing
 ffmpeg -rtsp_transport tcp -i rtsp://localhost:8554/uav-1/nadir -t 10 -c:v copy nadir.mkv

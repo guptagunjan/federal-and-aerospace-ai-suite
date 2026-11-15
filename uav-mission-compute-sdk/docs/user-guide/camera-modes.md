@@ -558,14 +558,14 @@ realsense-camera (implies):
 sudo apt install ffmpeg mosquitto-clients xdg-utils -y
 
 # View raw camera feed (needs a local display)
-ffplay rtsp://localhost:8554/uav-1/nadir
+ffplay -rtsp_transport tcp rtsp://localhost:8554/uav-1/nadir
 
 # Capture one frame
-ffmpeg -i rtsp://localhost:8554/uav-1/nadir -frames:v 1 frame.jpg
+ffmpeg -rtsp_transport tcp -i rtsp://localhost:8554/uav-1/nadir -frames:v 1 frame.jpg
 
 # Stream all 3 cameras (sim mode) to files
 for cam in nadir forward rear; do
-  ffmpeg -i rtsp://localhost:8554/uav-1/$cam \
+  ffmpeg -rtsp_transport tcp -i rtsp://localhost:8554/uav-1/$cam \
     -c:v copy out_$cam.h264 &
 done
 ```
@@ -577,7 +577,7 @@ done
 ssh -L 8554:localhost:8554 user@px4-host
 
 # Then locally:
-ffplay rtsp://localhost:8554/uav-1/nadir
+ffplay -rtsp_transport tcp rtsp://localhost:8554/uav-1/nadir
 ```
 
 Headless alternative — skip port-forwarding and record directly on the remote

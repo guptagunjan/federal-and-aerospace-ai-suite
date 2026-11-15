@@ -141,7 +141,7 @@ GPU_RENDER_DEVICE=/dev/dri/renderD128
 **Symptom:**
 
 ```text
-ffplay rtsp://<HOST_IP>:8555/uav-front-camera
+ffplay -rtsp_transport tcp rtsp://<HOST_IP>:8555/uav-front-camera
 Command 'ffplay' not found, but can be installed with:
 sudo apt install ffmpeg
 ```
@@ -152,7 +152,7 @@ sudo apt install ffmpeg
 sudo apt install ffmpeg
 
 # Then verify RTSP stream
-ffplay rtsp://<HOST_IP>:8555/uav-front-camera
+ffplay -rtsp_transport tcp rtsp://<HOST_IP>:8555/uav-front-camera
 ```
 
 To view the output stream without `ffplay` (e.g., on a headless server),
@@ -185,13 +185,13 @@ ffmpeg -rtsp_transport tcp \
 
 ### PX4 SITL — image pull or runtime issues
 
-**Symptom:** The `px4` service fails to start or behaves unexpectedly with the `latest` tag.
+**Symptom:** The `px4` service fails to start or behaves unexpectedly with the pinned PX4 SITL tag.
 
-**Resolution:** Pin the PX4 SITL image to a known-good digest in `docker-compose-pymavlink.yml`:
+**Resolution:** Pin another tag from [Docker Hub](https://hub.docker.com/r/px4io/px4-sitl/tags) (for example the release `v1.18.0-rc1`) in `docker-compose-pymavlink.yml`:
 
 ```diff
--image: px4io/px4-sitl:latest
-+image: px4io/px4-sitl@sha256:01866d912ac22ca6119a996b830cf628a6d47dfb60fdccc41cd9f44b62935a44
+-image: px4io/px4-sitl:v1.18.0-beta1-660-g61907962c9
++image: px4io/px4-sitl:v1.18.0-rc1
 ```
 
 ### `make pymav-up` / `make uavsdk-up` fails — `address already in use` (port `1883`, `14551`, etc.)
@@ -961,13 +961,67 @@ expected for stale results, not a bug.
 
 VSS keeps its top `VSS_MAX_RESULTS` hits across **all** streams together, so
 a camera with far more indexed footage, or whose content simply matches the
-query better, takes most of the slots. The ground station interleaves the
-kept results by UAV/camera for display but cannot show a stream VSS
-dropped. Raise `VSS_MAX_RESULTS`, or scope the query with the popup's
-UAV/Camera filters; see
+query better, can take most of the slots. The ground station therefore also
+asks VSS for each UAV's and each camera's own best matches, merges them and
+interleaves the results by UAV/camera. The popup's UAV/Camera filters narrow
+that merged set without searching again; see
 [Tune VSS Live Search](../how-to-customize/search-tuning/vss-search-tuning.md).
 If a camera's footage genuinely never matches (check by filtering to that
 camera alone), no setting will surface it.
+
+### A search finds nothing in recent footage although the object is visible
+
+VSS applies the UAV/camera and time filters only after it has fetched the 1000
+frames most similar to the query across the whole index. When the index holds
+a large amount of older footage (for example from a previous pymavlink session
+or another scenario), the newest frames can fall outside those 1000 and the
+search returns nothing for them. Run `make clean-vss-index` in
+`uav-ground-station` and `make up-vss` to start with an empty index. Raising
+the candidate count in VSS is not a remedy: 3000 candidates made a query take
+about 30 s.
+
+### A short query such as "person" returns few or no results
+
+Single words score lower against CLIP than full descriptions. Describe the
+scene ("a person walking on the road") or lower `VSS_SEARCH_MIN_PEAK_SCORE`
+(see [Tune VSS Live Search](../how-to-customize/search-tuning/vss-search-tuning.md)).
+
+### A result does not show the object that was searched for
+
+VSS indexes whole frames and also crops of the objects its detector finds.
+Image-text similarity alone cannot tell a car crop from a truck crop, and
+cannot confirm a small object inside a whole frame. When the query names a
+detectable object (for example person, car, truck, bus), the ground station
+drops crops whose detector label is another object, and shows the label of a
+matching crop as **Matched object**. Whole-frame hits cannot be checked this
+way. To return only crops labelled as the searched object, set
+`VSS_SEARCH_OBJECT_MATCH=strict` in `uav-ground-station/.env`; this suits
+high-resolution footage, but returns nothing when the detector does not find the
+object, for example on small or low-resolution frames.
+
+### A newly indexed feed stays "starting" for a few seconds before "running"
+
+Expected: VSS has to open the RTSP source and produce its first embeddings
+before it reports `running`, and it briefly re-reports `starting` every time
+it reopens a stream afterward (shown as `running` for `RESTART_GRACE_SECONDS`
+once a stream has run at least once, so it does not flicker in the UI). While a
+feed is starting, the ground station checks VSS every few seconds instead of
+every `VSS_LIVE_SYNC_INTERVAL_SECONDS`. The initial delay itself is VSS opening
+the stream and is not configurable.
+
+### Live-index panel shows feeds as `queued`
+
+VSS indexes at most `VSS_LIVE_STREAM_MAX_CONCURRENT` live streams (default `8`,
+one per UAV camera). With more cameras connected, the tab being viewed starts
+first and the rest wait for a free slot. Raise the value in `.env` and run
+`make up-vss` to index more at once (more CPU/GPU load). Feeds of cameras that
+stopped, and of UAVs unreachable for a minute, are paused to free their slots.
+
+### `Object detection failed` floods the `uav-gs-vss-dataprep` log
+
+The detector model could not be written to the `vss-yolox-models` volume, which
+earlier releases mounted root-owned. Run `make up-vss` to recreate the
+container with the corrected mount; the model downloads on the next start.
 
 ### Every matching query returns the full result count
 
@@ -989,8 +1043,10 @@ Confirm it reached `RUNNING` on the UAV host first (see
 `make cameras-status`); VSS only indexes RTSP streams it can see.
 
 See the Ground Station's own
-[README — VSS search](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/README.md#vss-search)
-for the full route reference and container list.
+[Get Started — VSS search](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/get-started.md#vss-search)
+for the container list, and its
+[Configuration — VSS search routes](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/configuration.md#vss-search)
+for the full route reference.
 
 ## Multi-UAV Ground Station
 
@@ -1018,5 +1074,5 @@ sessions. This is a dashboard-session concept, not a UAV-side state change —
 nothing was lost on the UAV hosts themselves.
 
 See the Ground Station's own
-[README — Multiple UAVs at once](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/README.md#multiple-uavs-at-once)
+[Get Started — Multiple UAVs at once](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/get-started.md#multiple-uavs-at-once)
 for the implementation details.

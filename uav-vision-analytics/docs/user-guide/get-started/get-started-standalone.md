@@ -188,12 +188,14 @@ echo "Instance ID: $INSTANCE_ID"
 
 Install ffmpeg first if not present using `sudo apt install ffmpeg`.
 
-Any of the annotated streams can be viewed with `ffplay <RTSP_PATH>`:
+Any of the annotated streams can be viewed with `ffplay -rtsp_transport tcp <RTSP_PATH>`.
+The stream is served over RTSP/TCP only (port 8555 is the only port published). Without
+`-rtsp_transport tcp`, ffplay negotiates UDP and the window stays blank.
 
 ```bash
-ffplay rtsp://<HOST_IP>:8555/uav-front-camera   # one stream per camera of configs/cameras-pymavlink.yaml
-ffplay rtsp://<HOST_IP>:8555/uav-bottom-camera
-ffplay rtsp://<HOST_IP>:8555/uav-back-camera
+ffplay -rtsp_transport tcp rtsp://<HOST_IP>:8555/uav-front-camera   # one stream per camera of configs/cameras-pymavlink.yaml
+ffplay -rtsp_transport tcp rtsp://<HOST_IP>:8555/uav-bottom-camera
+ffplay -rtsp_transport tcp rtsp://<HOST_IP>:8555/uav-back-camera
 ```
 
 #### View scene captions
@@ -231,7 +233,7 @@ ports`443`, `1883` and `8555` of this host. See the [UAV Ground Station README](
 > over indexed footage, run `make up-vss` instead of `make up` (it brings up
 > everything `make up` does, plus 8 extra VSS containers) — it needs its own
 > required `.env` variables first (MinIO/Postgres credentials, an embedding
-> model, and a detection model). See [VSS search in the UAV Ground Station README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/README.md#vss-search),
+> model, and a detection model). See [VSS search in the UAV Ground Station Get Started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/get-started.md#vss-search),
 > and [tune the VSS search results](../how-to-customize/search-tuning/vss-search-tuning.md)
 > once it is running.
 

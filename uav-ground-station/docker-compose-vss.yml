@@ -153,6 +153,9 @@ services:
       MM_DATAPREP_DETECTION_DEVICE: ${VSS_DETECTION_DEVICE:-CPU}
       MM_DATAPREP_FRAMES_TEMP_DIR: /tmp/dataprep
       MM_DATAPREP_LIVE_STREAM_ENABLED: "true"
+      # Concurrent live streams VSS accepts (HTTP 503 beyond it); viz-backend uses
+      # the same value to queue feeds instead of failing.
+      MM_DATAPREP_LIVE_STREAM_MAX_CONCURRENT: ${VSS_LIVE_STREAM_MAX_CONCURRENT:-8}
       # Live streams write continuously; keep 24h by default (0 = forever).
       MM_DATAPREP_LIVE_RETENTION_HOURS: ${VSS_LIVE_RETENTION_HOURS:-24}
       MM_DATAPREP_LIVE_STREAM_DB_HOST: postgres-service
@@ -168,7 +171,10 @@ services:
         soft: 32768
         hard: 65535
     volumes:
-      - vss-yolox-models:/app/models/yolox
+      # Mounted at /app/models (owned by the container user) rather than at
+      # /app/models/yolox, which Docker would create root-owned and unwritable,
+      # so the detector could never download its model.
+      - vss-yolox-models:/app/models
       - vss-data-prep:/tmp/dataprep
       - vss-ov-models:/home/appuser/.cache/huggingface
       - vss-ov-models:/app/ov_models
