@@ -47,7 +47,7 @@ example `0.22`) if genuine matches are being hidden; raise it if unrelated
 clips appear for nonsense queries. The search popup's `filtered_out` count
 (`/api/search`) shows how many hits the filters removed.
 
-#### Queries that name an object
+### Queries that name an object
 
 VSS also indexes crops of the objects its detector finds, each with a label.
 When a query names a detectable object (person, car, truck, bus, ...), crops

@@ -105,7 +105,7 @@ nano .env
 
 Set these variables in `.env`:
 
-```env
+```bash
 # Device path from v4l2-ctl --list-devices above
 USB_VIDEO_DEVICE=/dev/video32
 

@@ -67,8 +67,9 @@ either skill's steps inside the other.
 
 | Task | Read this file in the target repo first |
 | --- | --- |
-| What the dashboard shows, architecture, Quick Start, Flight Summary, VSS search | `uav-ground-station/README.md` |
-| Every `.env` variable and its default/required status | `uav-ground-station/.env.example` |
+| What the dashboard shows, architecture, Quick Start | `uav-ground-station/README.md` |
+| Full deployment walkthrough: both sides, VSS overlay, multi-UAV, Flight Summary | `uav-ground-station/docs/get-started.md` |
+| Every `.env` variable and the backend route reference | `uav-ground-station/docs/configuration.md` and `uav-ground-station/.env.example` |
 | VSS search tuning once deployed (separate skill) | `uav-vision-analytics/docs/user-guide/how-to-customize/search-tuning/vss-search-tuning.md` |
 
 Read the live copy of these files in the target repo — port numbers,
@@ -91,13 +92,16 @@ change between releases; do not hardcode a remembered value.
    - If VSS requested: embedding model [`CLIP/clip-vit-b-32`, offered by
      `make init`'s download-consent prompt — only ask if they want a
      different model], detection model [`OpenVINO/yolox_s-int8-ov`, same
-     prompt — only ask if they want a different model], and device for
-     ingest/detection/query embedding (`CPU`/`GPU`/`NPU`, independently)
-     [`CPU` for all three]. `VSS_MINIO_*`/`VSS_POSTGRES_*` credentials need no
-     question at all — `make init` auto-generates them; only mention this if
-     the user wants to set their own instead.
-3. Read `README.md`/`.env.example` for the exact current variable names and
-   defaults before writing `.env`.
+     prompt — only ask if they want a different model], and the inference
+     device [`CPU`]. For one uniform device across ingest/detection/query
+     embedding, `make up-vss DEVICE=CPU|GPU|NPU|all` sets all three
+     `VSS_*_DEVICE` variables in `.env` in one step (`all` auto-picks GPU >
+     NPU > CPU from what `make init` already detected) — only ask about the
+     three devices independently if the user explicitly wants a mixed
+     setup (e.g. ingest on GPU, query on CPU).
+3. Read `README.md`/`docs/get-started.md`/`docs/configuration.md`/
+   `.env.example` for the exact current variable names and defaults before
+   writing `.env`.
 4. Run `make init` (auto-generates VSS credentials and auto-detects host
    IP/GPU/NPU; for the VSS models it prints the two Hugging Face model names
    plus their license pages and asks `Pre-fill .env with these default models
@@ -106,7 +110,9 @@ change between releases; do not hardcode a remembered value.
    non-interactively if they've already said so). Edit `.env` only for
    choices that differ from the defaults above (or if they declined the
    prompt and need `VSS_EMBEDDING_MODEL`/`DATAPREP_DETECTION_MODEL` set by
-   hand), then `make up` (or `make up-vss`).
+   hand), then `make up` (or `make up-vss DEVICE=CPU|GPU|NPU|all` if a
+   non-default uniform device was requested — this both starts VSS and sets
+   all three device variables in one step, no manual `.env` edit needed).
 5. Verify per the guardrails/completion criteria below.
 
 ## Parameter Validation (enforce BEFORE editing `.env` or starting the stack)
