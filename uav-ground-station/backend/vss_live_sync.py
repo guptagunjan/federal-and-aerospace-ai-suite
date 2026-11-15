@@ -116,6 +116,11 @@ def configure(detector: Detector, rtsp_port: int) -> None:
 
 class LiveSyncRequest(BaseModel):
     host: str = Field(..., min_length=1, max_length=253, pattern=HOST_PATTERN)
+    # Set by a tab restored in the background (browser bfcache/multi-tab
+    # restore): it still needs its host tracked so its feeds get indexed, but
+    # must not steal scheduler priority away from whichever tab the user is
+    # actually looking at.
+    background: bool = False
 
 
 def _host_status(host: str) -> dict:
@@ -264,7 +269,14 @@ async def _start_stream(client: httpx.AsyncClient, host: str, kind: str, name: s
         "stream_name": name,
         "sensor_id": name,
         "description": f"UAV {host} camera {camera} feed (registered by uav-ground-station)",
-        "tags": ["uav", host, camera],
+        # 4th tag (the host-qualified stream name, same value as sensor_id
+        # above) lets vss_search.py query one exact (host, camera) pair --
+        # the bare `camera` tag alone is shared across UAVs that reuse the
+        # same camera name (e.g. every drone has a "nadir"/"forward"/"rear"),
+        # so an OR-tag query on it alone can't distinguish whose footage is
+        # whose. _attribute_result() only reads tags[1]/tags[2], so this is
+        # additive and doesn't change host/camera attribution.
+        "tags": ["uav", host, camera, name],
     })
     _recreated_at[name] = time.monotonic()
     logger.info("VSS live stream %s registered for %s", name, url)
@@ -305,7 +317,7 @@ async def _reconcile(client: httpx.AsyncClient, hosts: list, detections: list) -
     for stream in streams:
         name = str(stream.get("stream_name") or "")
         tags = stream.get("tags") if isinstance(stream.get("tags"), list) else []
-        if (stream.get("state") in ACTIVE_STATES and len(tags) == 3 and tags[0] == "uav"
+        if (stream.get("state") in ACTIVE_STATES and len(tags) >= 3 and tags[0] == "uav"
                 and tags[1] not in _hosts and uav_naming.owns(name, str(tags[1]))):
             try:
                 await _call(client, "PATCH", f"/streams/{stream['stream_id']}", json={"state": "paused"})
@@ -313,6 +325,37 @@ async def _reconcile(client: httpx.AsyncClient, hosts: list, detections: list) -
                 free += 1
             except (RuntimeError, httpx.HTTPError) as exc:
                 logger.warning("VSS live sync: could not pause orphaned stream %s: %s", name, exc)
+
+    # Another VSS stream pointing at the same RTSP URL as a camera's canonical
+    # host-qualified name is a duplicate -- e.g. a legacy/manually-created
+    # stream from before this naming scheme. Clean these up *before*
+    # allocating slots below: if left until after, a duplicate holding the
+    # last free slot would keep the canonical name permanently "queued" (it
+    # never starts, so it's exempt from after-the-fact cleanup, and the
+    # duplicate is never recognised as "owned" so it's never paused either --
+    # a deadlock). Deleting it here frees its slot in the same pass, so the
+    # canonical registration can take over immediately below with at most one
+    # reconcile pass's gap, not forever.
+    for plan in plans:
+        host = plan["host"]
+        wanted_urls = {
+            f"rtsp://{host}:{_rtsp_port}/{camera}".rstrip("/"): name
+            for name, camera in plan["wanted"].items()
+        }
+        for stream in list(streams):
+            canonical = wanted_urls.get(str(stream.get("stream_url", "")).rstrip("/"))
+            dup_name = stream.get("stream_name")
+            if canonical is None or dup_name == canonical:
+                continue
+            try:
+                await _call(client, "DELETE", f"/streams/{stream['stream_id']}")
+                logger.info("VSS duplicate live stream %s deregistered (duplicate source URL of %s)", dup_name, canonical)
+                uav_naming.unregister(str(dup_name or ""))
+                if stream.get("state") in ACTIVE_STATES:
+                    free += 1
+                streams.remove(stream)
+            except (RuntimeError, httpx.HTTPError) as exc:
+                errors[host].append(str(exc))
 
     for plan in plans:
         host = plan["host"]
@@ -329,26 +372,6 @@ async def _reconcile(client: httpx.AsyncClient, hosts: list, detections: list) -
                     queued[host][name] = camera
                 else:
                     errors[host].append(str(exc))
-
-    # Another VSS stream pointing at the same RTSP URL as a camera we just
-    # confirmed under its canonical host-qualified name is a duplicate.
-    for plan in plans:
-        host = plan["host"]
-        wanted_urls = {
-            f"rtsp://{host}:{_rtsp_port}/{camera}".rstrip("/"): name
-            for name, camera in plan["wanted"].items() if name not in queued[host]
-        }
-        for stream in streams:
-            canonical = wanted_urls.get(str(stream.get("stream_url", "")).rstrip("/"))
-            dup_name = stream.get("stream_name")
-            if canonical is None or dup_name == canonical:
-                continue
-            try:
-                await _call(client, "DELETE", f"/streams/{stream['stream_id']}")
-                logger.info("VSS duplicate live stream %s deregistered (duplicate source URL of %s)", dup_name, canonical)
-                uav_naming.unregister(str(dup_name or ""))
-            except (RuntimeError, httpx.HTTPError) as exc:
-                errors[host].append(str(exc))
 
     listing = await _call(client, "GET", "/streams")
     fresh = [s for s in (listing or {}).get("streams", []) if isinstance(s, dict)]
@@ -449,7 +472,8 @@ async def live_sync_start(req: LiveSyncRequest):
     global _priority_host
     _require_enabled()
     _hosts.setdefault(req.host, _new_host_state())
-    _priority_host = req.host
+    if not req.background:
+        _priority_host = req.host
     _ensure_loop()
     before = _pass_count
     _kick.set()

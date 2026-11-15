@@ -27,6 +27,11 @@
   // cameras -- the "UAV"/"Camera" selects narrow this down to `results` (below)
   // purely client-side, without searching again.
   let allResults = [];
+  // allResults narrowed by the UAV/Camera selects, *before* the Live/Uploads
+  // source filter or the maxResults cap are applied -- so switching Live/
+  // Uploads can always see the full set for that source, not just whatever
+  // survived the "all" cap.
+  let matched = [];
   let results = [];
   let matchedCount = 0;
   let maxResults = Infinity;
@@ -431,19 +436,33 @@
     if (node) node.scrollIntoView({ block: "nearest" });
   }
 
+  let resultsCountEl = null;
+
+  function updateResultsCount() {
+    if (!resultsCountEl) return;
+    resultsCountEl.textContent = matchedCount > results.length
+      ? `Top ${results.length} of ${matchedCount} results`
+      : `${results.length} result${results.length === 1 ? "" : "s"}`;
+  }
+
+  // counts: total per-source counts across all of `matched` (uncapped, before
+  // the Live/Uploads filter or maxResults cap) -- so the badge numbers always
+  // reflect the true totals, even while a filter/cap is hiding some of them.
   function renderFilterBar(counts) {
     const bar = el("div", "results-toolbar");
-    bar.appendChild(el("span", "results-count", matchedCount > results.length
-      ? `Top ${results.length} of ${matchedCount} results`
-      : `${results.length} result${results.length === 1 ? "" : "s"}`));
+    resultsCountEl = el("span", "results-count");
+    updateResultsCount();
+    bar.appendChild(resultsCountEl);
     if (counts.live && counts.upload) {
       const seg = el("div", "segmented");
-      [["all", `All ${results.length}`], ["upload", `Uploads ${counts.upload}`], ["live", `Live ${counts.live}`]].forEach(([key, label]) => {
+      [["all", `All ${counts.live + counts.upload}`], ["upload", `Uploads ${counts.upload}`], ["live", `Live ${counts.live}`]].forEach(([key, label]) => {
         const b = el("button", `segmented-btn${filter === key ? " active" : ""}`, label);
         b.type = "button";
         b.addEventListener("click", () => {
           filter = key;
           seg.querySelectorAll(".segmented-btn").forEach((n) => n.classList.toggle("active", n === b));
+          recomputeResults();
+          updateResultsCount();
           renderList();
           const visible = visibleResults();
           if (visible.length && !visible.some(({ i }) => i === selectedIndex)) select(visible[0].i, false);
@@ -456,8 +475,9 @@
   }
 
   function renderResults() {
-    const counts = results.reduce((acc, r) => { acc[r.source] = (acc[r.source] || 0) + 1; return acc; }, {});
+    const counts = matched.reduce((acc, r) => { acc[r.source] = (acc[r.source] || 0) + 1; return acc; }, {});
     filter = "all";
+    recomputeResults();
 
     const layout = el("div", "results-layout");
     playerEl = el("section", "player-pane");
@@ -504,19 +524,32 @@
     }
   }
 
+  // Recomputes `results` (what's rendered/counted) from `matched` for the
+  // currently active Live/Uploads `filter`, capping to maxResults *within
+  // that source* -- so e.g. selecting "Uploads" can surface uploads beyond
+  // whatever the initial "all" cap happened to include.
+  function recomputeResults() {
+    const sourceFiltered = filter === "all" ? matched : matched.filter((r) => r.source === filter);
+    matchedCount = sourceFiltered.length;
+    results = sourceFiltered.slice(0, maxResults);
+  }
+
   function applyFilters() {
     const host = uavFilterEl ? uavFilterEl.value.trim() : "";
     const camera = cameraFilterEl ? cameraFilterEl.value.trim() : "";
-    results = allResults.filter((r) => {
+    matched = allResults.filter((r) => {
       if (host && r.host !== host) return false;
       if (camera && r.camera !== camera) return false;
       return true;
     });
-    matchedCount = results.length;
-    results = results.slice(0, maxResults);
     selectedIndex = -1;
     if (!allResults.length) return; // nothing searched yet -- let runSearch's own messaging stand
-    if (!results.length) {
+    // Checked against the unfiltered `matched` (host/camera filter only), not
+    // through recomputeResults()'s source (Live/Uploads) filter: renderResults()
+    // below always resets that filter to "all", so a stale Live/Uploads
+    // selection from a previous render must not cause a false "no results"
+    // here when switching UAV/camera would otherwise reveal matches.
+    if (!matched.length) {
       const detail = host || camera
         ? "No results from this UAV/camera for the current search — try widening or clearing the filter."
         : "Try a different description, or make sure videos have been uploaded and indexed in VSS.";
@@ -794,7 +827,10 @@
       clearInterval(livePollTimer);
       livePollTimer = setInterval(() => liveSync("GET"), 3000);
     }
-    await liveSync("POST", { host });
+    // Tell the backend whether this is the visible tab (gets scheduler
+    // priority for free live-stream slots) or a background restore (tracked,
+    // but must not bump whoever is already priority).
+    await liveSync("POST", { host, background: !!e.detail.background });
     if (isOpen()) populateSourceFilters();
   });
   document.addEventListener("uav:disconnected", async (e) => {

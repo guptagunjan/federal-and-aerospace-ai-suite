@@ -249,9 +249,11 @@ def _attribute_result(metadata: dict, stream: Optional[dict]) -> tuple:
         if camera is not None:
             return camera, host
 
-    # Only trusted in the exact 3-element ["uav", host, camera] shape this app writes.
+    # Only trusted in the ["uav", host, camera, ...] shape this app writes
+    # (vss_live_sync.py also appends a 4th host-qualified-name tag, used only
+    # for per-(host, camera) scoped queries below -- ignored here).
     tags = _as_tag_list(metadata.get("tags"))
-    if len(tags) == 3 and tags[0] == "uav":
+    if len(tags) >= 3 and tags[0] == "uav":
         return tags[2], tags[1]
 
     stream_name = (stream or {}).get("stream_name")
@@ -295,14 +297,33 @@ def _tag_scopes(req: "SearchRequest") -> list:
     tag per query."""
     if req.tags and req.tags.strip():
         return [req.tags.strip()]
+    # A host/camera tag filter only matches *live* streams tagged that way --
+    # uploaded videos carry no such tag and VSS would drop them entirely
+    # before _belongs_to_host()/_belongs_to_camera() below get a chance to
+    # keep them (both explicitly treat uploads as always in-scope). Pair the
+    # scoped query with an unfiltered one so a host/camera-scoped direct API
+    # call doesn't lose upload results the unfiltered call would have returned.
     if req.host:
-        return [req.host]
+        return [None, req.host]
     if req.camera:
-        return [req.camera]
+        return [None, req.camera]
     known = uav_naming.hosts_and_cameras()
+    if len(known) > 1:
+        # Bare camera names collide across UAVs that reuse the same camera
+        # label (e.g. every drone here has a "nadir"/"forward"/"rear"), so an
+        # OR-tag query on just the name returns whichever UAV's footage
+        # scores best for it and starves the others even when their own
+        # footage matches too. Query each (host, camera) pair's own unique
+        # host-qualified stream tag (vss_live_sync.py's 4th tag) instead of
+        # the shared bare name.
+        pair_scopes = sorted(
+            uav_naming.stream_name(host, camera) for host, cams in known.items() for camera in cams
+        )
+        return [None, *sorted(known), *pair_scopes]
+    # One UAV: camera names can't collide with another UAV's, and its
+    # per-host query above already covers everything it recorded.
     cameras = sorted({c for cams in known.values() for c in cams})
-    # With one UAV its camera queries already cover everything it recorded.
-    return [None, *(sorted(known) if len(known) > 1 else []), *cameras]
+    return [None, *cameras]
 
 
 async def _query_scope(client: httpx.AsyncClient, body: dict, scope: Optional[str]) -> list:

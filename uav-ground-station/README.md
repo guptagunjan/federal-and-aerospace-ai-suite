@@ -13,11 +13,13 @@ that host until you enter its IP in the dashboard and press **Connect**.
 
 > [!IMPORTANT]
 > This is a *viewer*, not the UAV stack itself. Deploy
-> [`uav-vision-analytics`](../uav-vision-analytics#readme) (or the
-> [`uav-mission-compute-sdk`](../uav-mission-compute-sdk#readme) for SDK mode)
-> on the UAV host first and get at least one camera pipeline running, then
-> come back here. See [Get Started](docs/get-started.md) for the full
-> walkthrough of both sides.
+> [`uav-vision-analytics`](../uav-vision-analytics#readme) first (standalone/
+> pymavlink mode), or [`uav-mission-compute-sdk`](../uav-mission-compute-sdk#readme)
+> **plus** `uav-vision-analytics` in SDK mode -- the viewer talks to
+> `uav-vision-analytics`'s `/pipelines/status` API and RTSP streams either way,
+> the Mission Compute SDK alone has no camera pipelines for it to see. Get at
+> least one camera pipeline running, then come back here. See
+> [Get Started](docs/get-started.md) for the full walkthrough of both sides.
 
 ## Quick Start
 
