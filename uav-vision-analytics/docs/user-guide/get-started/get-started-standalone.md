@@ -161,7 +161,27 @@ make cameras-status    # compare the file with the running pipelines
 
 #### Option B — Manual REST API
 
-Start a single pipeline directly without the pipeline manager. Useful for testing individual pipelines or custom configurations. The pipeline is chosen by name (`uav_object_detection_<det>` for detection only, `uav_object_detection_<det>_<vlm>` with captions, see [Configure the Cameras](../how-to-customize/camera-management/configure-cameras.md)); everything in `parameters` is optional and defaults to the pipeline's own values.
+Start a single pipeline directly, without the pipeline manager and without
+editing `configs/cameras-pymavlink.yaml` — useful for a quick test or a
+one-off pipeline with custom parameters.
+
+**Pick a pipeline name.** Pipelines are pre-defined in
+`configs/config-pymavlink.json`; pick one by name, do not build a
+pipeline in the request. The name encodes where detection (and, if
+captioning, the VLM) runs — there is no separate "device" field to set:
+
+| Name pattern | Meaning |
+| --- | --- |
+| `uav_object_detection_<det>` | Detection only. `<det>` is `cpu`, `gpu`, or `npu` — where `gvadetect` runs. |
+| `uav_object_detection_<det>_<vlm>` | Detection **and** scene captions. `<det>` as above; `<vlm>` is `cpu` or `gpu` — where the captioning VLM runs (the VLM never runs on the NPU). |
+
+For example: `uav_object_detection_gpu` (detection only, on the GPU),
+`uav_object_detection_npu_gpu` (detection on the NPU, captions on the GPU).
+**To use a different device, start a different pipeline name** — there are
+nine combinations in total; see
+[Modify Pipelines — pipeline naming](../how-to-customize/pipeline-management/modify-pipelines.md#pipeline-naming)
+for the full list, including the live-camera (`uav_camera_<det>[_<vlm>]`)
+names used with a RealSense/USB camera.
 
 ```bash
 # detection on the GPU, no captions
@@ -177,10 +197,22 @@ INSTANCE_ID=$(curl -k -s -X POST \
     }
   }' | tr -d '"')
 echo "Instance ID: $INSTANCE_ID"
+
+# Verify it reached RUNNING state (not ERROR)
+curl -k -s https://<HOST_IP>/pipelines/${INSTANCE_ID}/status | python3 -m json.tool
 ```
 
 > [!TIP]
-> **Useful request values**: the pipeline name picks the detection device (and the VLM device); `destination.frame.path` is the stream name; `destination.frame.overlay: false` hides the boxes and the telemetry text; `parameters.video`, `detection_model`, `captioner_model_path`, `captioner_prompt`, and `mqtt_topic` (captioning pipelines) override the defaults. To keep a per-frame detection log, add `"metadata": {"type": "file", "path": "/tmp/results.jsonl", "format": "json-lines"}` to `destination`.
+> **Useful request values**: `destination.frame.path` is the stream name
+> (`rtsp://<HOST_IP>:8555/<path>`); `destination.frame.overlay: false` hides
+> the boxes and the telemetry text; `parameters.video`, `detection_model`,
+> `captioner_model_path`, `captioner_prompt`, and `mqtt_topic` (captioning
+> pipelines only) override the pipeline's defaults — everything in
+> `parameters` is optional. To keep a per-frame detection log, add
+> `"metadata": {"type": "file", "path": "/tmp/results.jsonl", "format":
+> "json-lines"}` to `destination`. The full parameter list per pipeline, and
+> how to list every available pipeline name, is in
+> [Manage Pipelines — REST API](../how-to-customize/pipeline-management/manage-pipelines.md#rest-api).
 
 ### 5. View the output stream
 

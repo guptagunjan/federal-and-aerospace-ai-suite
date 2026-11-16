@@ -80,13 +80,16 @@ machine's LAN IP and detects the GPU/NPU devices; edit `.env` only to override t
 > after `make up-vss` (see the [!IMPORTANT] note below `make down`).
 
 > [!NOTE]
-> If a port is already in use on this machine -- for example when running next
-> to the UAV Mission Compute SDK, which binds `8080` and `8889` -- compose fails
-> with "port is already allocated". Set a free `VIZ_PORT` (for example `8081`) and
-> `MEDIAMTX_WEBRTC_PORT` (for example `8890`) in `.env` and run `make up` (or
-> `make up-vss`) again. If the ICE ports `8189` are taken too, change
-> `MEDIAMTX_WEBRTC_ICE_UDP_PORT` and `MEDIAMTX_WEBRTC_ICE_TCP_PORT`. See
-> [Configuration](configuration.md) for every port variable.
+> If a port is already in use on this machine, choose different ones in `.env` and
+> run `make up` (or `make up-vss`) again. When running next to the UAV Mission
+> Compute SDK, which publishes `8080` (REST), `8554` (RTSP), `8888` (HLS) and
+> `8889` (WebRTC), set for example `VIZ_PORT=8081` and `MEDIAMTX_WEBRTC_PORT=8890`.
+> Do not pick one of the SDK's ports: if the ground station holds it, the SDK's
+> MediaMTX cannot publish its ports and the UAV cameras have no RTSP source (see
+> [Troubleshooting](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/docs/user-guide/how-to-guides/troubleshooting.md#pipelines-skip-their-cameras--the-rtsp-source-is-not-available-uav-mission-compute-sdk-mode)).
+> If the ICE port `8189` is taken too, change `MEDIAMTX_WEBRTC_ICE_UDP_PORT` and
+> `MEDIAMTX_WEBRTC_ICE_TCP_PORT`. See [Configuration](configuration.md) for every
+> port variable.
 
 Then open `http://<VIZ_HOST_IP>:<VIZ_PORT>` (default port `8080`; `http://localhost:<VIZ_PORT>` when `VIZ_HOST_IP` is `127.0.0.1`), enter the
 UAV host's IP from step 0 (defaults to `VIZ_COMPANION_HOST`, `127.0.0.1`), and press **Connect**. Device cards

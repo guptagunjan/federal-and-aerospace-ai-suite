@@ -68,6 +68,7 @@ services:
       - NO_PROXY=${no_proxy},${HOST_IP},host.docker.internal
       - ENABLE_RTSP=true
       - RTSP_PORT=8555
+      - RTSP_H264_GOP_SIZE=${RTSP_H264_GOP_SIZE:-15}
       - APPEND_PIPELINE_NAME_TO_PUBLISHER_TOPIC=true
       - RUN_MODE=EVA
       - EMIT_SOURCE_AND_DESTINATION=true
@@ -86,6 +87,8 @@ services:
       - "./gvapython/telemetry-overlay-pymavlink.py:/home/pipeline-server/gvapython/telemetry-overlay-pymavlink.py"
       - "./scripts/mavlink_pipeline_manager.py:/home/pipeline-server/scripts/pipeline_manager.py"
       - "./scripts/camera_config.py:/home/pipeline-server/scripts/camera_config.py:ro"
+      # Shorter H.264 keyframe interval, so joining a stream (VSS, the ground station relay) starts within about a second.
+      - "./scripts/rtsp-overrides/gstreamer_rtsp_factory.py:/home/pipeline-server/src/server/rtsp/gstreamer_rtsp_factory.py:ro"
       # The folder with cameras-pymavlink.yaml is mounted, not the file: editors save by replacing the file, and a
       # single-file mount would keep showing the old one inside the container.
       - "./configs:/home/pipeline-server/configs:rw"

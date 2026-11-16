@@ -621,11 +621,14 @@ code { color: var(--accent); }
 .live-index-head .muted { font-weight: 400; }
 .live-index-list { list-style: none; margin: 0; padding: 0; }
 .live-index-list:not(:empty) { margin-top: 6px; }
-.live-index-item { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; padding: 3px 0; }
+.live-index-item { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 8px; padding: 3px 0; }
 .live-state { padding: 1px 8px; border-radius: 999px; font-size: 11px; text-transform: capitalize; background: rgba(138, 151, 166, 0.18); color: var(--muted); }
 .live-state-running { background: rgba(46, 160, 67, 0.18); color: var(--ok); }
 .live-state-starting, .live-state-pending, .live-state-reconnecting, .live-state-queued { background: rgba(210, 161, 6, 0.18); color: var(--warn); }
 .live-state-error, .live-state-stopped { background: rgba(217, 48, 38, 0.18); color: var(--bad); }
+/* Info icon next to a "queued" badge: explains VSS's live-stream slot limit
+   is expected capacity management, not an error -- hover/focus for the detail. */
+.live-state-info { cursor: help; color: var(--warn); font-size: 13px; line-height: 1; }
 
 /* Side column fits the viewport: the two utilization charts share whatever
    height the search panel leaves, instead of fixed 140px charts that push

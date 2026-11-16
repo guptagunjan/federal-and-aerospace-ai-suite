@@ -146,11 +146,12 @@ change between releases; do not hardcode a remembered value.
   the first connection while the remote pipeline is busy under concurrent
   detection + VLM load.
 - Single-machine test next to the UAV Mission Compute SDK: the SDK already
-  binds `8080` (REST) and `8889`/`8189` (mediamtx WebRTC). Before `make up`,
-  set `VIZ_PORT` (e.g. `8081`) and `MEDIAMTX_WEBRTC_PORT`/
-  `MEDIAMTX_WEBRTC_ICE_UDP_PORT`/`MEDIAMTX_WEBRTC_ICE_TCP_PORT` in `.env`;
-  otherwise compose fails with "port is already allocated". The dashboard URL
-  then uses that `VIZ_PORT`, not `8080`.
+  publishes `8080` (REST), `8554` (RTSP), `8888` (HLS) and `8889` (WebRTC). Before
+  `make up`, set `VIZ_PORT` (e.g. `8081`) and `MEDIAMTX_WEBRTC_PORT` (e.g. `8890`;
+  never `8888`/`8889`) and, if needed, `MEDIAMTX_WEBRTC_ICE_UDP_PORT`/
+  `MEDIAMTX_WEBRTC_ICE_TCP_PORT` in `.env`; otherwise compose fails with "port is
+  already allocated", or the SDK's MediaMTX loses its ports and the UAV has no RTSP
+  source. The dashboard URL then uses that `VIZ_PORT`, not `8080`.
 - Never fabricate/accept committed `VSS_MINIO_PASSWORD`/`VSS_POSTGRES_PASSWORD`
   values into any tracked file — these live only in the gitignored `.env`.
   `make init` already auto-generates a strong random value for both

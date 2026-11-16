@@ -372,6 +372,39 @@ make down && make up-sim-camera
 
 See [Get Started (UAV Mission Compute SDK Mode) — Step 1](../get-started/get-started-uavsdk.md#1-start-the-uav-mission-compute-sdk).
 
+### Pipelines skip their cameras — the RTSP source is not available (UAV Mission Compute SDK mode)
+
+**Symptom:**
+
+```text
+[pipeline] Skipping camera 'nadir_camera': its RTSP source rtsp://host.docker.internal:8554/uav-1/nadir is not available.
+```
+
+**Cause:** The SDK publishes the camera streams only while the vehicle is armed
+(`camera-bridge` logs `UAV ARMED — cameras active` / `UAV DISARMED — cameras
+paused`), and the pipeline manager checks the sources at the moment it sees the
+armed state. Start the manager before arming, or arm and take off first and then
+run `make start-rtsp`; landing disarms the vehicle and removes the streams.
+
+If the vehicle is armed and the streams are still missing, the SDK's `mediamtx`
+container may have lost its ports because another service, usually the ground
+station, holds one of them (`8554`, `8888`, `8889`). `camera-bridge` then cannot
+resolve `mediamtx` and restarts its publisher in a loop. Check:
+
+```bash
+docker ps --format '{{.Names}}\t{{.Ports}}' | grep -E 'mediamtx'   # the SDK one must list 8554, 8888 and 8889
+docker exec camera-bridge getent hosts mediamtx                     # must print an address
+```
+
+**Resolution:** Give the ground station other ports in `uav-ground-station/.env`
+(for example `VIZ_PORT=8081`, `MEDIAMTX_WEBRTC_PORT=8890`), run its `make up-vss`
+again, then recreate the SDK's MediaMTX:
+
+```bash
+cd uav-mission-compute-sdk
+docker compose up -d --no-deps --force-recreate mediamtx
+```
+
 ### No telemetry overlay on stream (all zeros)
 
 **Pymavlink mode:** Confirm `mavlink-router` is running and forwarding MAVLink from PX4:
@@ -1006,8 +1039,20 @@ before it reports `running`, and it briefly re-reports `starting` every time
 it reopens a stream afterward (shown as `running` for `RESTART_GRACE_SECONDS`
 once a stream has run at least once, so it does not flicker in the UI). While a
 feed is starting, the ground station checks VSS every few seconds instead of
-every `VSS_LIVE_SYNC_INTERVAL_SECONDS`. The initial delay itself is VSS opening
-the stream and is not configurable.
+every `VSS_LIVE_SYNC_INTERVAL_SECONDS`.
+
+Two settings decide how soon a new feed shows its first embeddings (about
+6-13 s after connecting with the defaults, against 30-40 s before):
+
+- A client can only start decoding at a keyframe, so VSS waits for the next
+  one when it opens the stream. The pipeline server's H.264 keyframe interval is
+  `RTSP_H264_GOP_SIZE` frames (default `15`, set in `.env`; read by
+  `scripts/rtsp-overrides/gstreamer_rtsp_factory.py`; the encoder's own default
+  is 90, which is 6-13 s at this frame rate). A smaller value starts feeds
+  sooner and raises the video bitrate.
+- VSS embeds a live feed's frames in batches and sends on a partial batch once
+  its oldest frame is `VSS_LIVE_BATCH_MAX_AGE_SECONDS` old (default `2` in
+  `uav-ground-station/.env`; VSS's own default is `20`).
 
 ### Live-index panel shows feeds as `queued`
 

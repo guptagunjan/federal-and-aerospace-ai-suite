@@ -153,6 +153,9 @@ services:
       MM_DATAPREP_DETECTION_DEVICE: ${VSS_DETECTION_DEVICE:-CPU}
       MM_DATAPREP_FRAMES_TEMP_DIR: /tmp/dataprep
       MM_DATAPREP_LIVE_STREAM_ENABLED: "true"
+      # A live feed's frames are embedded in batches; a partial batch is sent on once its oldest frame is this old,
+      # so this is the longest a new feed waits for its first embeddings (VSS default: 20).
+      MM_DATAPREP_LIVE_BATCH_MAX_AGE_SECONDS: ${VSS_LIVE_BATCH_MAX_AGE_SECONDS:-2}
       # Concurrent live streams VSS accepts (HTTP 503 beyond it); viz-backend uses
       # the same value to queue feeds instead of failing.
       MM_DATAPREP_LIVE_STREAM_MAX_CONCURRENT: ${VSS_LIVE_STREAM_MAX_CONCURRENT:-8}

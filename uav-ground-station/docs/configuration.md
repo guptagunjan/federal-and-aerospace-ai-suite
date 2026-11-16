@@ -21,7 +21,7 @@ support.
 | `VIZ_REMOTE_MQTT_PORT` | `1883` | UAV host's nginx MQTT passthrough port |
 | `VIZ_REMOTE_RTSP_PORT` | `8555` | UAV host's raw RTSP port, pulled by the mediamtx relay |
 | `VIZ_PUBLIC_HOST` | `127.0.0.1` (`make init` sets the host's LAN IP) | Address browsers use to reach this machine; advertised as the WebRTC ICE candidate. Set it when `VIZ_HOST_IP` is `0.0.0.0` |
-| `MEDIAMTX_WEBRTC_PORT` / `MEDIAMTX_WEBRTC_ICE_UDP_PORT` / `MEDIAMTX_WEBRTC_ICE_TCP_PORT` | `8889` / `8189` / `8189` | Published WebRTC (WHEP) port and ICE UDP/TCP ports of the relay; change them when they are already in use (the SDK also binds `8889`) |
+| `MEDIAMTX_WEBRTC_PORT` / `MEDIAMTX_WEBRTC_ICE_UDP_PORT` / `MEDIAMTX_WEBRTC_ICE_TCP_PORT` | `8889` / `8189` / `8189` | Published WebRTC (WHEP) port and ICE UDP/TCP ports of the relay; change them when they are already in use (the SDK publishes `8888` and `8889`, so use neither) |
 | `GPU_DEVICE` / `GPU_RENDER_DEVICE` / `NPU_DEVICE` | `/dev/null` (`make init` auto-detects) | Devices passed to `gs-metrics-manager` for this machine's utilization panel |
 | `VSS_MINIO_USER` / `VSS_MINIO_PASSWORD` / `VSS_POSTGRES_USER` / `VSS_POSTGRES_PASSWORD` | _(`make init` auto-generates: a fixed username + password)_ | Credentials for the VSS overlay's MinIO and Postgres -- internal to this stack only, edit `.env` yourself before `make up-vss` for different values |
 | `VSS_REGISTRY` / `VSS_TAG` | `intel/` / `2026.3.0-rc1` | Registry and tag of the VSS images used by `make up-vss` |
@@ -34,6 +34,7 @@ support.
 | `VSS_INGEST_EMBEDDING_DEVICE` / `VSS_DETECTION_DEVICE` / `VSS_QUERY_EMBEDDING_DEVICE` | `CPU` | Devices for VSS indexing, object detection and query embedding. Set all three at once at deploy time with `make up-vss DEVICE=CPU\|GPU\|NPU\|all` instead of hand-editing `.env` -- see [Get Started](get-started.md#vss-search) |
 | `VSS_FRAME_INTERVAL` | `15` | Live ingest embeds one frame every N frames |
 | `VSS_LIVE_RETENTION_HOURS` | `24` | How long indexed live footage/embeddings are kept before being purged |
+| `VSS_LIVE_BATCH_MAX_AGE_SECONDS` | `2` | Longest a new live feed waits for its first embeddings: a partial batch of frames is embedded once its oldest frame is this many seconds old (VSS's own default is `20`) |
 | `VSS_LIVE_SYNC_INTERVAL_SECONDS` | `15` | How often running UAV pipelines are synced to VSS live streams |
 | `VSS_DATASTORE_BUCKET` | `video-summary` | VSS MinIO bucket for uploaded videos |
 | `VSS_SEARCH_TIMEOUT_SECONDS` | `60` | Timeout for one search request to VSS |

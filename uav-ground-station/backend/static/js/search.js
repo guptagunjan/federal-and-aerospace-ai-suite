@@ -765,6 +765,7 @@
     if (payload) lastLivePayload = payload;
     const data = stateFor(lastLivePayload);
     const streams = (data && data.streams) || [];
+    const capacity = lastLivePayload && lastLivePayload.capacity;
     liveList.replaceChildren(...streams.map((st) => {
       const li = document.createElement("li");
       li.className = "live-index-item";
@@ -780,12 +781,25 @@
       const count = document.createElement("span");
       count.className = "muted";
       count.textContent = st.embeddings_created != null ? `${st.embeddings_created} indexed` : "";
-      li.append(name, count, badge);
+      li.append(name, count);
+      // "queued" is VSS's normal capacity-management behavior (its live-stream
+      // slot limit is reached).
+      if (state === "queued" && !st.last_error) {
+        const info = document.createElement("span");
+        info.className = "live-state-info";
+        info.textContent = "\u24d8"; // circled "i"
+        info.title = capacity
+          ? `This feed is waiting for a free VSS live-stream slot (max ${capacity.limit} at once). `
+            + "It starts automatically as soon as another feed frees a slot."
+          : "This feed is waiting for a free VSS live-stream slot. "
+            + "It starts automatically as soon as another feed frees a slot.";
+        li.append(info);
+      }
+      li.append(badge);
       return li;
     }));
     const running = streams.filter((st) => st.state === "running").length;
     const queued = streams.filter((st) => st.state === "queued").length;
-    const capacity = lastLivePayload && lastLivePayload.capacity;
     if (!liveSyncHost) liveSummary.textContent = "connect to a UAV to start";
     else if (!data || !data.last_sync) liveSummary.textContent = "checking feeds\u2026";
     else if (data.last_error && !streams.length) liveSummary.textContent = "VSS not ready \u2014 retrying\u2026";
