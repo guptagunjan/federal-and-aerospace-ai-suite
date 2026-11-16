@@ -12,7 +12,7 @@ support.
 | Variable | Default | Purpose |
 |---|---|---|
 | `VIZ_HOST_IP` | `127.0.0.1` (`make init` sets the host's LAN IP) | Bind address for this machine's published port |
-| `VIZ_PORT` | `8080` | Dashboard port; change it when the port is already in use on this machine (for example next to the UAV Mission Compute SDK) |
+| `VIZ_PORT` | `8080` | Dashboard port; `make up` moves it to the next free port when this machine already uses it (for example next to the UAV Mission Compute SDK, which publishes `8080`) |
 | `VIZ_COMPANION_HOST` | `127.0.0.1` | UAV Companion Compute IP field |
 | `VIZ_CAMERA_ORDER` | `front,bottom,back` | Camera card order, by a word in the stream name; unlisted cameras follow alphabetically |
 | `VIZ_REMOTE_HTTPS_PORT` | `443` | UAV host's nginx HTTPS port |
@@ -21,12 +21,12 @@ support.
 | `VIZ_REMOTE_MQTT_PORT` | `1883` | UAV host's nginx MQTT passthrough port |
 | `VIZ_REMOTE_RTSP_PORT` | `8555` | UAV host's raw RTSP port, pulled by the mediamtx relay |
 | `VIZ_PUBLIC_HOST` | `127.0.0.1` (`make init` sets the host's LAN IP) | Address browsers use to reach this machine; advertised as the WebRTC ICE candidate. Set it when `VIZ_HOST_IP` is `0.0.0.0` |
-| `MEDIAMTX_WEBRTC_PORT` / `MEDIAMTX_WEBRTC_ICE_UDP_PORT` / `MEDIAMTX_WEBRTC_ICE_TCP_PORT` | `8889` / `8189` / `8189` | Published WebRTC (WHEP) port and ICE UDP/TCP ports of the relay; change them when they are already in use (the SDK publishes `8888` and `8889`, so use neither) |
+| `MEDIAMTX_WEBRTC_PORT` / `MEDIAMTX_WEBRTC_ICE_UDP_PORT` / `MEDIAMTX_WEBRTC_ICE_TCP_PORT` | `8889` / `8189` / `8189` | Published WebRTC (WHEP) port and ICE UDP/TCP ports of the relay; `make up` moves them to the next free port when taken; the SDK publishes `8888` and `8889`, so the ground station avoids both when the SDK is installed on the same machine |
 | `GPU_DEVICE` / `GPU_RENDER_DEVICE` / `NPU_DEVICE` | `/dev/null` (`make init` auto-detects) | Devices passed to `gs-metrics-manager` for this machine's utilization panel |
 | `VSS_MINIO_USER` / `VSS_MINIO_PASSWORD` / `VSS_POSTGRES_USER` / `VSS_POSTGRES_PASSWORD` | _(`make init` auto-generates: a fixed username + password)_ | Credentials for the VSS overlay's MinIO and Postgres -- internal to this stack only, edit `.env` yourself before `make up-vss` for different values |
 | `VSS_REGISTRY` / `VSS_TAG` | `intel/` / `2026.3.0-rc1` | Registry and tag of the VSS images used by `make up-vss` |
 | `VSS_ENABLED` / `VSS_MANAGER_URL` / `VSS_DATASTORE_URL` | `false` / `http://host.docker.internal:12345/manager` / `.../datastore` | Only for a VSS deployed separately; `make up-vss` sets them itself |
-| `VSS_MANAGER_PORT` | `3001` | Host port (bound to `VIZ_HOST_IP`) for the VSS pipeline-manager API |
+| `VSS_MANAGER_PORT` | `3001` | Host port (bound to `VIZ_HOST_IP`) for the VSS pipeline-manager API; moved to the next free port by `make up-vss` when taken |
 | `VIDEO_GROUP_ID` / `RENDER_GROUP_ID` | `44` / `992` | Host's `video`/`render` group ids (`getent group video render`; `make init` does not set them), needed for GPU/NPU VSS devices |
 | `VSS_EMBEDDING_MODEL` | `CLIP/clip-vit-b-32` (`make init` pre-fills this only after confirming the download prompt, `ACCEPT_VSS_MODELS=y` to skip it) | Embedding model VSS uses for frames and queries; edit `.env` before `make up-vss` for a different model |
 | `DATAPREP_DETECTION_MODEL` | `OpenVINO/yolox_s-int8-ov` (`make init` pre-fills this only after confirming the download prompt, `ACCEPT_VSS_MODELS=y` to skip it) | Object detection model VSS dataprep uses for crop extraction. Must be a Hugging Face OpenVINO Model API repo in the `OpenVINO/` namespace |

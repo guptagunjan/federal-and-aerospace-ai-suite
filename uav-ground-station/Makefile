@@ -112,9 +112,14 @@ _build_if_changed:
 		fi; \
 	fi
 
+# Host ports that something else on this machine already uses (for example the UAV Mission
+# Compute SDK) are moved to the next free one in .env first.
+RESOLVE_PORTS = ./scripts/resolve-ports.sh VIZ_PORT:8080 MEDIAMTX_WEBRTC_PORT:8889 MEDIAMTX_WEBRTC_ICE_UDP_PORT+MEDIAMTX_WEBRTC_ICE_TCP_PORT:8189
+
 # Recipes source .env because make exports the values it read at startup, which would otherwise
-# override a change made to .env by an earlier prerequisite (for example DEVICE=).
+# override a change made to .env by an earlier prerequisite (for example DEVICE= or a moved port).
 up: init _build_if_changed ## Start the ground-station viewer + mediamtx relay sidecar (H.264 Relay mode); builds viz-backend only if missing or changed
+	@$(RESOLVE_PORTS)
 	@set -a; . ./.env; set +a; \
 	docker compose -f docker-compose.yml -f docker-compose-mediamtx.yml up -d --no-build && \
 	echo "" && echo "✅ UAV ground station is up. Open the dashboard at: http://$$VIZ_HOST_IP:$${VIZ_PORT:-8080}"
@@ -179,6 +184,7 @@ _set_vss_device:
 	fi
 
 up-vss: init _set_vss_device _check_vss_env _build_if_changed ## Relay mode + VSS search containers (enables Live Natural Language Search). DEVICE=CPU|GPU|NPU|all to pick the inference device
+	@$(RESOLVE_PORTS) VSS_MANAGER_PORT:3001
 	@set -a; . ./.env; set +a; \
 	$(VSS_COMPOSE) up -d --no-build && \
 	echo "" && echo "✅ UAV ground station is up. Open the dashboard at: http://$$VIZ_HOST_IP:$${VIZ_PORT:-8080}"

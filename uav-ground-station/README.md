@@ -74,8 +74,7 @@ full backend route reference.
   pipeline state and name (from the DL Streamer
   Pipeline Server's REST API and the start request of each pipeline).
 - CPU/GPU/NPU utilization of the UAV host (proxied from its `metrics-manager`) and of this ground-station machine (the local `uav-gs-metrics-manager` container).
-- **Live Natural Language Search**: the **Search Videos** button (top bar or side
-  panel, or press `/`) opens a popup where you type a natural-language prompt
+- **Live Natural Language Search**: the **Search Videos** button (top bar, or press `/`) opens a popup where you type a natural-language prompt
   (e.g. "a red car on the road") and get a ranked result list with thumbnails
   next to a clip player (arrow keys move between results, `Esc` closes), from a
   separately deployed

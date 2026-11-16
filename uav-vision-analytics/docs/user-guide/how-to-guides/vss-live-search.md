@@ -96,7 +96,7 @@ those 1000 and make a search for it return nothing.
 
 ### 3. Run a search
 
-Press **Search Videos** (top bar, side panel, or the `/` key), type a
+Press **Search Videos** (top bar, or the `/` key), type a
 natural-language prompt, and press Enter. Results are ranked with
 thumbnails; use the arrow keys to move between them and `Esc` to close.
 

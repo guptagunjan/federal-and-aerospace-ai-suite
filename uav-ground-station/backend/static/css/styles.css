@@ -647,7 +647,6 @@ code { color: var(--accent); }
 .side-panels .chart-wrap canvas { position: absolute; inset: 0; }
 .side-panels .search-panel { flex: none; }
 .search-panel .live-index { margin: 8px 0 0; }
-.search-panel .btn-block { margin-top: 10px; }
 @media (max-height: 820px) {
   .side-panels .chart-subtitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .side-panels .chart-wrap { min-height: 56px; }

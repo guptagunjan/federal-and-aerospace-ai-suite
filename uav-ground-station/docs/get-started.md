@@ -80,16 +80,17 @@ machine's LAN IP and detects the GPU/NPU devices; edit `.env` only to override t
 > after `make up-vss` (see the [!IMPORTANT] note below `make down`).
 
 > [!NOTE]
-> If a port is already in use on this machine, choose different ones in `.env` and
-> run `make up` (or `make up-vss`) again. When running next to the UAV Mission
-> Compute SDK, which publishes `8080` (REST), `8554` (RTSP), `8888` (HLS) and
-> `8889` (WebRTC), set for example `VIZ_PORT=8081` and `MEDIAMTX_WEBRTC_PORT=8890`.
-> Do not pick one of the SDK's ports: if the ground station holds it, the SDK's
-> MediaMTX cannot publish its ports and the UAV cameras have no RTSP source (see
-> [Troubleshooting](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/docs/user-guide/how-to-guides/troubleshooting.md#pipelines-skip-their-cameras--the-rtsp-source-is-not-available-uav-mission-compute-sdk-mode)).
-> If the ICE port `8189` is taken too, change `MEDIAMTX_WEBRTC_ICE_UDP_PORT` and
-> `MEDIAMTX_WEBRTC_ICE_TCP_PORT`. See [Configuration](configuration.md) for every
-> port variable.
+> `make up` and `make up-vss` check the ports this stack publishes (`VIZ_PORT`,
+> `MEDIAMTX_WEBRTC_PORT`, the WebRTC ICE ports and `VSS_MANAGER_PORT`) and move any
+> that another process on this machine already uses to the next free port, saved
+> in `.env`; the dashboard URL printed at the end uses the result. The UAV Mission
+> Compute SDK publishes `8080` (REST), `8554` (RTSP), `8888` (HLS) and `8889`
+> (WebRTC), so on a machine with the SDK installed the ground station takes
+> `8081` and `8890` instead, and never one of those four, even while the SDK is
+> stopped. Running the SDK and the ground station on separate machines is the
+> intended setup; if you start the ground station first and install the SDK
+> afterwards, the SDK's own `make` fails on the ports the ground station holds, so
+> start the SDK first or set different ports in `.env` yourself.
 
 Then open `http://<VIZ_HOST_IP>:<VIZ_PORT>` (default port `8080`; `http://localhost:<VIZ_PORT>` when `VIZ_HOST_IP` is `127.0.0.1`), enter the
 UAV host's IP from step 0 (defaults to `VIZ_COMPANION_HOST`, `127.0.0.1`), and press **Connect**. Device cards

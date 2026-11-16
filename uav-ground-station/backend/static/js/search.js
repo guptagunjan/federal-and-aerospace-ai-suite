@@ -8,7 +8,7 @@
 // All result text is set via textContent.
 (() => {
   const modal = document.getElementById("search-modal");
-  const openBtns = [document.getElementById("open-search-btn"), document.getElementById("topbar-search-btn")];
+  const openBtns = [document.getElementById("topbar-search-btn")];
   const entryPoints = [document.getElementById("search-panel"), document.getElementById("topbar-search-btn")];
   const closeBtn = document.getElementById("search-modal-close");
   const form = document.getElementById("search-form");

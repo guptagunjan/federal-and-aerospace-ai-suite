@@ -396,9 +396,12 @@ docker ps --format '{{.Names}}\t{{.Ports}}' | grep -E 'mediamtx'   # the SDK one
 docker exec camera-bridge getent hosts mediamtx                     # must print an address
 ```
 
-**Resolution:** Give the ground station other ports in `uav-ground-station/.env`
-(for example `VIZ_PORT=8081`, `MEDIAMTX_WEBRTC_PORT=8890`), run its `make up-vss`
-again, then recreate the SDK's MediaMTX:
+**Resolution:** Run `make up-vss` (or `make up`) again in `uav-ground-station`: it
+moves the ground station to free ports and avoids the SDK's `8080`, `8554`, `8888`
+and `8889`. If the ground station was started before the SDK was installed, set
+other ports in `uav-ground-station/.env` (for example `VIZ_PORT=8081`,
+`MEDIAMTX_WEBRTC_PORT=8890`) and run its `make up-vss` again. Then recreate the
+SDK's MediaMTX:
 
 ```bash
 cd uav-mission-compute-sdk
