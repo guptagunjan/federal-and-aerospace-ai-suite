@@ -1048,11 +1048,13 @@ Two settings decide how soon a new feed shows its first embeddings (about
 6-13 s after connecting with the defaults, against 30-40 s before):
 
 - A client can only start decoding at a keyframe, so VSS waits for the next
-  one when it opens the stream. The pipeline server's H.264 keyframe interval is
-  `RTSP_H264_GOP_SIZE` frames (default `15`, set in `.env`; read by
-  `scripts/rtsp-overrides/gstreamer_rtsp_factory.py`; the encoder's own default
-  is 90, which is 6-13 s at this frame rate). A smaller value starts feeds
-  sooner and raises the video bitrate.
+  one when it opens the stream. The cameras ask for a keyframe every
+  `H264_GOP_SIZE` frames (`15`, in `scripts/camera_config.py`) through the
+  `encode-gop-size` option of the RTSP destination. A pipeline server that does
+  not know the option ignores it and uses the encoder's own interval of 90
+  frames, which is 6-13 s at this frame rate and delays each camera's first
+  embeddings by up to that long. A smaller value starts feeds sooner and raises
+  the video bitrate.
 - VSS embeds a live feed's frames in batches and sends on a partial batch once
   its oldest frame is `VSS_LIVE_BATCH_MAX_AGE_SECONDS` old (default `2` in
   `uav-ground-station/.env`; VSS's own default is `20`).
