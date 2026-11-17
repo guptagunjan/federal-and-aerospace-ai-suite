@@ -1,20 +1,11 @@
-<!--hide_directive
-```{eval-rst}
-.. meta::
-   :description: Release notes for the deterministic threat detection subproject, covering versions 1.1.0, 1.0.1, and 1.0.0.
-   :keywords: release notes, deterministic threat detection, Scenescape, Basler, Qbv, HOTA
-```
-hide_directive-->
+# Release Notes: Mission Systems
 
-# Release Notes: Deterministic Threat Detection
 
-- [Version 1.1.0](#version-110)
-- [Version 1.0.1](#version-101)
-- [Version 1.0.0](#version-100)
 
-## Version 1.1.0
 
-**Release Date**: December 2026
+## Version 2026.3.0
+
+**Release Date**: December 10, 2026
 
 **New**:
 
