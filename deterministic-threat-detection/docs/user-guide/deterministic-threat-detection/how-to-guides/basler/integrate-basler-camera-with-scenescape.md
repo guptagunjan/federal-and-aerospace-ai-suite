@@ -39,7 +39,7 @@ run it to start the pipeline server on a network that can reach the cameras.
 4. Build the pipeline server image with the camera SDK. The standard Deep Learning Streamer
    Pipeline Server (DL Streamer Pipeline Server) image has neither the pylon SDK nor the
    `gencamsrc` GStreamer source. Follow
-   [Integrate Pylon SDK, Step 2: Create the Docker Image](https://docs.openedgeplatform.intel.com/dev/edge-ai-suites/ai-suite-manufacturing/industrial-edge-insights-vision/pallet-defect-detection/how-to-guides/integrate-camera-sdks.html#step-2-create-the-docker-image),
+   [Integrate Pylon SDK, Step 2: Create the Docker Image](https://docs.openedgeplatform.intel.com/2026.3/edge-ai-suites/ai-suite-manufacturing/industrial-edge-insights-vision/pallet-defect-detection/how-to-guides/integrate-camera-sdks.html#step-2-create-the-docker-image),
    using the image from `DLSTREAMER_PIPELINE_SERVER_IMAGE` in `src/scene/.env` as the base, and note
    these points:
 
