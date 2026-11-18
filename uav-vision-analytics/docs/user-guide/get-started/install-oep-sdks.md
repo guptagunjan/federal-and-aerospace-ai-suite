@@ -65,7 +65,7 @@ This startup flow brings up:
 
 The initial image build typically takes 10-15 minutes. After startup completes, the full stack is running from the `uav-mission-compute-sdk` directory.
 
-For details on deployment options and restart procedures, see the [UAV Mission Compute SDK Get Started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/docs/user-guide/get-started.md).
+For details on deployment options and restart procedures, see the [UAV Mission Compute SDK Get Started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/docs/user-guide/get-started.md).
 
 ### Step 3: Validate the Running Stack
 
@@ -223,7 +223,7 @@ For a concrete implementation of this shape, see [UAV Vision Analytics Get Start
 
 Use [SDK Agent Commands and MCP Tools](../infrastructure/uav-sdk-apps-skill.md) once the manual loop above is working, to shorten common cycles:
 
-For prompt-driven workflows, review the [MCP server examples](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/mcp-server/examples/README.md) (quick status, real-time monitoring, anomaly detection, battery prediction, video processing, and full application-development patterns for computer vision and time-series pipelines). These examples show that you can describe requirements in natural language and have the tooling compose and wire a complete app workflow from a single prompt, then refine it iteratively with additional prompts.
+For prompt-driven workflows, review the [MCP server examples](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/mcp-server/examples/README.md) (quick status, real-time monitoring, anomaly detection, battery prediction, video processing, and full application-development patterns for computer vision and time-series pipelines). These examples show that you can describe requirements in natural language and have the tooling compose and wire a complete app workflow from a single prompt, then refine it iteratively with additional prompts.
 
 - Slash commands for stack lifecycle (start, validate, capture a frame, switch camera mode, cleanup).
 - MCP tools for pipeline composition, telemetry queries, and app deployment actions.
@@ -232,7 +232,7 @@ For prompt-driven workflows, review the [MCP server examples](https://github.com
 
 Treat tuning as a measured loop, not one-off tweaks.
 
-**App-level tuning** — driven by the [UAV Mission Compute SDK Benchmarking Guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/docs/user-guide/benchmarking.md):
+**App-level tuning** — driven by the [UAV Mission Compute SDK Benchmarking Guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/docs/user-guide/benchmarking.md):
 
 1. Capture a baseline with `make bench` (passive), `make bench-bridge-sweep` (publish-rate sweep), and `make bench-client-sweep` (subscriber fan-out).
 2. Correlate against your app's own metrics: end-to-end latency, dropped frames, inference FPS, memory/GPU headroom.
@@ -252,9 +252,9 @@ Treat tuning as a measured loop, not one-off tweaks.
 
 ## Next Steps
 
-- Review the upstream [UAV Mission Compute SDK Get Started](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/docs/user-guide/get-started.md) for USB camera setup and advanced configuration.
+- Review the upstream [UAV Mission Compute SDK Get Started](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/docs/user-guide/get-started.md) for USB camera setup and advanced configuration.
 
-- Review the [UAV Mission Compute SDK Benchmarking Guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/docs/user-guide/benchmarking.md) for telemetry and bridge performance benchmarking.
+- Review the [UAV Mission Compute SDK Benchmarking Guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/docs/user-guide/benchmarking.md) for telemetry and bridge performance benchmarking.
 
 - Refer to [Get Started — UAV Mission Compute SDK Mode](./get-started-uavsdk.md) for application deployment and running the vision analytics stack against the live UAV SDK services.
 

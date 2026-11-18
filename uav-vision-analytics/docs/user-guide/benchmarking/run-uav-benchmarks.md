@@ -18,7 +18,7 @@ metrics from `metrics-manager`.
 
 > [!NOTE]
 > Other benchmarking options are also offered by Open Edge Platform. Use
-> [Visual Pipeline and Platform Evaluation Tool (ViPPET)](https://docs.openedgeplatform.intel.com/dev/edge-ai-libraries/visual-pipeline-and-platform-evaluation-tool/index.html)
+> [Visual Pipeline and Platform Evaluation Tool (ViPPET)](https://docs.openedgeplatform.intel.com/2026.3/edge-ai-libraries/visual-pipeline-and-platform-evaluation-tool/index.html)
 > for comparing AI pipeline performance across CPU, GPU, and NPU.
 >
 > For platform-level benchmarking, see the [Edge Workloads and Benchmarks Guide](./run-edge-benchmarks.md) -

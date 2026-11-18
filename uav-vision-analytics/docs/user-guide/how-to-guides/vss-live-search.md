@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 
 `uav-ground-station` can optionally index every running camera's live RTSP
 stream into a
-[Video Search and Summarization (VSS)](https://docs.openedgeplatform.intel.com/dev/edge-ai-libraries/video-search-and-summarization/index.html)
+[Video Search and Summarization (VSS)](https://docs.openedgeplatform.intel.com/2026.3/edge-ai-libraries/video-search-and-summarization/index.html)
 stack and let an operator search across them with a natural-language query
 (e.g., "a red car on the road"). This tutorial covers enabling the overlay,
 how a UAV's cameras get indexed, and how to scope a search to one UAV or
@@ -28,7 +28,7 @@ camera — this is a `uav-ground-station` feature; nothing changes on the
   device/camera) — see [Get Started](../get-started/get-started-standalone.md)
   and [Configure the Cameras](../how-to-customize/camera-management/configure-cameras.md).
 - `uav-ground-station` checked out (see its
-  [Quick Start](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/README.md#quick-start)) and `make init` already run once (this creates
+  [Quick Start](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/README.md#quick-start)) and `make init` already run once (this creates
   `.env`). It is recommended to run it on a different machine than the UAV Mission Compute SDK
   stack: both publish the mediamtx WebRTC port `8889` on `HOST_IP`.
 - `VSS_MINIO_USER` / `VSS_MINIO_PASSWORD` / `VSS_POSTGRES_USER` /
@@ -62,7 +62,7 @@ make up-vss DEVICE=all    # auto-pick the best hardware 'make init' already dete
 `DEVICE=all` prefers GPU, then NPU, then CPU, based on whatever `GPU_DEVICE`/
 `NPU_DEVICE` `make init` already found on this host. Omit `DEVICE` entirely to
 leave whatever is currently in `.env` untouched. See `uav-ground-station`'s
-[Configuration](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/user-guide/configuration.md)
+[Configuration](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/docs/user-guide/configuration.md)
 guide for what each of the three device variables individually controls if
 you want ingest, detection and query embedding to run on different devices.
 
@@ -134,7 +134,7 @@ dominating results, result clips that will not play, a new camera that never
 becomes searchable).
 
 See also the ground station's own
-[Get Started — VSS search](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/user-guide/get-started.md#vss-search)
+[Get Started — VSS search](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/docs/user-guide/get-started.md#vss-search)
 for the container list, and its
-[Configuration — VSS search routes](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/user-guide/configuration.md#vss-search)
+[Configuration — VSS search routes](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/docs/user-guide/configuration.md#vss-search)
 for the full route reference.

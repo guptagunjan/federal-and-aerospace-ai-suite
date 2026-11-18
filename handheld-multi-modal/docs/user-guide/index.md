@@ -7,10 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 
 <!--hide_directive
 <div class="component_card_widget">
-  <a class="icon_github" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/tree/main/handheld-multi-modal">
+  <a class="icon_github" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/tree/release-2026.3.0/handheld-multi-modal">
      GitHub
   </a>
-  <a class="icon_document" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/handheld-multi-modal/README.md">
+  <a class="icon_document" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/handheld-multi-modal/README.md">
      Readme
   </a>
   <a class="icon_download" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/releases/download/fedaero-latest/handheld-multi-modal.zip">
@@ -92,7 +92,7 @@ an interactive architecture page at `/architecture.html`.
 | Backend and UI | `handheld/backend:dev` (built locally) | Application logic; calls stock microservice APIs only |
 
 Model sources and licenses are listed in
-[third-party-components.spdx](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/handheld-multi-modal/third-party-components.spdx).
+[third-party-components.spdx](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/handheld-multi-modal/third-party-components.spdx).
 
 ## AI Playground
 

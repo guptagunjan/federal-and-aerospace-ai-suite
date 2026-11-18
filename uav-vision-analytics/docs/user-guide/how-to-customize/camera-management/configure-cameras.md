@@ -109,7 +109,7 @@ Each pipeline is tuned for its detection device, so the file chooses a pipeline 
    `NO` means the file asks for something the running pipeline does not have, for example after an edit while armed.
 
 4. **On the stream and in the dashboard.** The telemetry text at the top left of the stream names the camera and its
-   devices (for example `front-camera-NPU-GPU-Caption`). In the [ground-station dashboard](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/README.md)
+   devices (for example `front-camera-NPU-GPU-Caption`). In the [ground-station dashboard](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/README.md)
    every camera has a card with its devices as badges (`NPU`, `VLM GPU`, `no overlay`);
    hover the card header for the models, prompt, and video. Streams are
    `rtsp://<HOST_IP>:8555/uav-<camera>`, captions `mosquitto_sub -h <HOST_IP> -t uav/caption/<camera>`.
@@ -151,7 +151,7 @@ once a camera is connected.
 ## RTSP streams (UAV Mission Compute SDK)
 
 A camera can read an RTSP stream instead of a file or a device. The UAV Mission Compute SDK stack (`make uavsdk-up`) does
-this: it mounts [`configs/cameras-uavsdk.yaml`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/configs/cameras-uavsdk.yaml) (`CAMERAS_CONFIG`) with the same format and the
+this: it mounts [`configs/cameras-uavsdk.yaml`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/configs/cameras-uavsdk.yaml) (`CAMERAS_CONFIG`) with the same format and the
 same tools (`make check-cameras`, `make start-rtsp`, `make cameras-status`):
 
 ```yaml
@@ -208,7 +208,7 @@ camera that was stopped a moment ago is still registered for a short while.
 
 - The streams are named after the cameras (`uav-front-camera`), no longer after the devices (`uav-mavlink-cpu`). Update
   QGroundControl, VLC or script URLs; the caption topics are `uav/caption/<camera>` as well.
-- Captions need the VLM models: `make vlm-model` (see the [README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/README.md)).
+- Captions need the VLM models: `make vlm-model` (see the [README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/README.md)).
 - Detection on the CPU cannot keep up with a 30 fps video (about 17 to 25 fps); the NPU and the GPU can.
 - The pipelines publish no per-frame detection log. To keep one when starting a pipeline by hand, add a
   `destination.metadata` file destination to the start request.

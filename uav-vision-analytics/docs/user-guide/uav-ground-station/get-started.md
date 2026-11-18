@@ -12,15 +12,15 @@ UAV host is already running pipelines it can connect to. Deploy one of these
 first, on a **different machine** than this one:
 
 - For standalone (pymavlink) mode: deploy
-  [`uav-vision-analytics`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/README.md)
+  [`uav-vision-analytics`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/README.md)
   following its
-  [Standalone Get Started](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/docs/user-guide/get-started/get-started-standalone.md)
+  [Standalone Get Started](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/docs/user-guide/get-started/get-started-standalone.md)
   guide.
 - For SDK mode: deploy
-  [`uav-mission-compute-sdk`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/README.md)
+  [`uav-mission-compute-sdk`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/README.md)
   first, then `uav-vision-analytics` on top of it following
-  [SDK-mode Get Started](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/docs/user-guide/get-started/get-started-uavsdk.md)
-  — the Mission Compute SDK alone has no camera pipelines or
+  [SDK-mode Get Started](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/docs/user-guide/get-started/get-started-uavsdk.md)
+  -- the Mission Compute SDK alone has no camera pipelines or
   `/pipelines/status` API for this viewer to connect to; `uav-vision-analytics`
   is what actually provides those in both modes.
 

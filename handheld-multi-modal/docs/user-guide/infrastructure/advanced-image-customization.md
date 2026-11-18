@@ -57,7 +57,7 @@ These packages are required before composing any image:
 sudo apt install systemd-ukify mmdebstrap
 ```
 
-Follow the instructions at [Image Composition Prerequisites](https://docs.openedgeplatform.intel.com/dev/image-composer-tool/get-started/installation.html#image-composition-prerequisites) if you face issues installing packages using apt.
+Follow the instructions at [Image Composition Prerequisites](https://docs.openedgeplatform.intel.com/2026.3/platform-software/image-composer-tool/get-started/installation.html#image-composition-prerequisites) if you face issues installing packages using apt.
 
 > [!NOTE]
 > `mmdebstrap` version 0.8.x (shipped with Ubuntu OS version 22.04) has known

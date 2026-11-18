@@ -89,7 +89,7 @@ what each version adds and its known issues.
   (e.g. "a red car on the road") and get a ranked result list with thumbnails
   next to a clip player (arrow keys move between results, `Esc` closes), from a
   separately deployed
-  [Video Search and Summarization (VSS)](https://github.com/open-edge-platform/edge-ai-libraries/tree/main/sample-applications/video-search-and-summarization)
+  [Video Search and Summarization (VSS)](https://github.com/open-edge-platform/edge-ai-libraries/tree/release-2026.3.0/sample-applications/video-search-and-summarization)
   search stack -- see [Get Started -- VSS search](docs/user-guide/get-started.md#vss-search).
 - An interactive **Architecture** popup: the services on the UAV host, the ground station and the optional VSS stack, color-coded by origin (Open Edge Platform, open source, application). Pick a flow such as live video, captions, live indexing or search to highlight its path, click a service for its role, image and APIs, and see which models run on the NPU, GPU and CPU.
 - A **Flight Summary** report (top bar's **Flight Summary** button): pick one or more cameras that are currently captioning and a time window, and get an extractive summary -- an overview paragraph, recurring subjects, and a timeline of de-duplicated scene highlights grouped camera-by-camera (not interleaved by arrival time, so each camera's own story reads start-to-finish) -- built entirely from the MQTT caption stream already flowing for captioning-enabled pipelines. No VSS deployment or LLM call required; see [Get Started -- Flight Summary](docs/user-guide/get-started.md#flight-summary).

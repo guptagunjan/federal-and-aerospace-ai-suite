@@ -276,8 +276,8 @@ See the [DL Streamer Coding Agent Guide](./use-dlstreamer-coding-agent.md) for u
 
 - [DL Streamer Repository](https://github.com/open-edge-platform/dlstreamer)
 - [DL Streamer Docker Hub](https://hub.docker.com/r/intel/dlstreamer)
-- [DL Streamer Elements Reference](https://docs.openedgeplatform.intel.com/dev/edge-ai-libraries/dlstreamer/elements/elements.html)
-- [DL Streamer Samples Reference](https://docs.openedgeplatform.intel.com/dev/edge-ai-libraries/dlstreamer/dev_guide/sample_apps_index.html)
+- [DL Streamer Elements Reference](https://docs.openedgeplatform.intel.com/2026.3/edge-ai-libraries/dlstreamer/elements/elements.html)
+- [DL Streamer Samples Reference](https://docs.openedgeplatform.intel.com/2026.3/edge-ai-libraries/dlstreamer/dev_guide/sample_apps_index.html)
 - [Container Device Interface Guide](./configure-cdi.md) — CDI setup for GPU/NPU access
 
 <!--hide_directive

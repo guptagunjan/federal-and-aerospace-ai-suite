@@ -115,7 +115,7 @@ make init                # create .env, detect GPU
 ```
 
 > [!CAUTION]
-> Follow only **Step 0** (configure credentials) and **Step 1+2** (`make up-sim-camera`) from the [get-started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/docs/user-guide/get-started.md) / [SDK README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/README.md). Do **not** run `make apps` (SDK Step 3) — that starts the SDK's own AI vision-processor and dashboard, which is not needed here since `uav-vision-analytics` runs its own inference via DL Streamer Pipeline Server.
+> Follow only **Step 0** (configure credentials) and **Step 1+2** (`make up-sim-camera`) from the [get-started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/docs/user-guide/get-started.md) / [SDK README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/README.md). Do **not** run `make apps` (SDK Step 3) — that starts the SDK's own AI vision-processor and dashboard, which is not needed here since `uav-vision-analytics` runs its own inference via DL Streamer Pipeline Server.
 
 The SDK's `.env` defaults to `HOST_IP=127.0.0.1`, which binds MQTT, RTSP, and all other published ports to loopback only. Since `uav-vision-analytics` runs in a separate Docker container/network, it cannot reach loopback-bound ports. Set the SDK's `.env` to bind on all interfaces before starting it:
 
@@ -193,7 +193,7 @@ Two options are available depending on your use case:
 
 #### Option A — Managed RTSP output (recommended)
 
-Runs `pipeline_manager.py` inside the DL Streamer Pipeline Server container. It watches the SDK's MQTT status topic `uav/<UAV_ID>/telemetry/status` (`{"armed": true|false}`), starts the cameras of [`configs/cameras-uavsdk.yaml`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/configs/cameras-uavsdk.yaml) when the drone arms and stops them when it disarms. Annotated frames are served as RTSP on port `8555`.
+Runs `pipeline_manager.py` inside the DL Streamer Pipeline Server container. It watches the SDK's MQTT status topic `uav/<UAV_ID>/telemetry/status` (`{"armed": true|false}`), starts the cameras of [`configs/cameras-uavsdk.yaml`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/configs/cameras-uavsdk.yaml) when the drone arms and stops them when it disarms. Annotated frames are served as RTSP on port `8555`.
 
 The cameras are RTSP streams from the SDK (`rtsp://host.docker.internal:8554/<UAV_ID>/<camera>`, `UAV_ID` from `.env`, default `uav-1`). By default, `nadir_camera` detects on the CPU, `forward_camera` on the GPU, and `rear_camera` on the NPU (skipped when the host has no NPU). A camera whose RTSP source is not available is skipped. Edit the file to change the devices, switch off VLM captions, or hide the overlay; it is read again at every arming. It has the same format as for the simulator, see [Configure the cameras](../how-to-customize/camera-management/configure-cameras.md).
 
@@ -302,7 +302,7 @@ make up
 
 Then open `http://<VIZ_HOST_IP>:8080`, enter the **UAV host's IP** (`<HOST_IP>` above) and
 press **Connect**. The camera cards appear once the cameras run (after the drone arms). See
-the [UAV Ground Station README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/README.md).
+the [UAV Ground Station README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/README.md).
 
 > [!IMPORTANT]
 > If you do need to run the dashboard on the **same** host as
@@ -327,7 +327,7 @@ the [UAV Ground Station README](https://github.com/open-edge-platform/federal-an
 > over indexed footage, run `make up-vss` instead of `make up` (it brings up
 > everything `make up` does, plus 8 extra VSS containers) — it needs its own
 > required `.env` variables first (MinIO/Postgres credentials, an embedding
-> model, and a detection model). See [VSS search in the UAV Ground Station Get Started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/user-guide/get-started.md#vss-search),
+> model, and a detection model). See [VSS search in the UAV Ground Station Get Started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/docs/user-guide/get-started.md#vss-search),
 > and [tune the VSS search results](../how-to-customize/search-tuning/vss-search-tuning.md)
 > once it is running.
 

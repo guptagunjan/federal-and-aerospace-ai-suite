@@ -48,7 +48,7 @@ The installer sets up:
 - OpenVINO inference optimization toolkit
 - Pre-trained model repositories and sample implementations
 
-For full details, see the [OEP Vision AI SDK Get Started guide](https://docs.openedgeplatform.intel.com/dev/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/get-started.html).
+For full details, see the [OEP Vision AI SDK Get Started guide](https://docs.openedgeplatform.intel.com/2026.3/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/get-started.html).
 
 ## Step 3: Run the Sample Object Detection Pipeline
 
@@ -110,11 +110,11 @@ Exit the container with `exit`.
 
 Continue with the OEP Vision AI SDK tutorials to explore benchmarking, multi-stream processing, real-time detection, and profiling:
 
-- [Tutorial 1: OpenVINO Model Benchmark](https://docs.openedgeplatform.intel.com/dev/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-1.html)
-- [Tutorial 2: Multi-Stream Video Processing](https://docs.openedgeplatform.intel.com/dev/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-2.html)
-- [Tutorial 3: Real-Time Object Detection](https://docs.openedgeplatform.intel.com/dev/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-3.html)
-- [Tutorial 4: Advanced Video Analytics Pipelines](https://docs.openedgeplatform.intel.com/dev/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-4.html)
-- [Tutorial 5: Profiling](https://docs.openedgeplatform.intel.com/dev/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-5.html)
+- [Tutorial 1: OpenVINO Model Benchmark](https://docs.openedgeplatform.intel.com/2026.3/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-1.html)
+- [Tutorial 2: Multi-Stream Video Processing](https://docs.openedgeplatform.intel.com/2026.3/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-2.html)
+- [Tutorial 3: Real-Time Object Detection](https://docs.openedgeplatform.intel.com/2026.3/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-3.html)
+- [Tutorial 4: Advanced Video Analytics Pipelines](https://docs.openedgeplatform.intel.com/2026.3/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-4.html)
+- [Tutorial 5: Profiling](https://docs.openedgeplatform.intel.com/2026.3/OEP-articles/oep-sdk-manager/oep-vision-ai-sdk/tutorial-5.html)
 
 ## Related Guides
 

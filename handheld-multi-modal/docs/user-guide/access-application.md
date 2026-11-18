@@ -76,7 +76,7 @@ ffmpeg -re -stream_loop -1 -i video.mp4 -an -c:v libx264 -preset veryfast -tune 
 
 The console shows the same command, with the right address, after a publisher camera is added.
 
-The [`examples/realsense-rtsp.sh`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/handheld-multi-modal/examples/realsense-rtsp.sh)
+The [`examples/realsense-rtsp.sh`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/handheld-multi-modal/examples/realsense-rtsp.sh)
 script publishes an Intel® RealSense™ camera the same way.
 
 See the [Operator Guide](operator-guide.md) for a description of every part of the console.

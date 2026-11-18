@@ -142,7 +142,7 @@ Two options are available depending on your use case:
 
 Runs `pipeline_manager.py` inside the DL Streamer Pipeline Server container. It monitors the drone's ARMED/DISARMED state and automatically starts and stops inference pipelines. Annotated frames are served as RTSP on port `8555`.
 
-`make start-rtsp` starts the cameras listed in [`configs/cameras-pymavlink.yaml`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/configs/cameras-pymavlink.yaml): one pipeline per camera, each streaming on `rtsp://<HOST_IP>:8555/uav-<camera>`. The shipped file has three cameras (`front_camera`, `bottom_camera`, `back_camera`) with detection on the NPU and scene captions from the VLM on the GPU. Edit the file to choose the video, the detection and captioning devices and models, the prompt, and the overlay of each camera, see [Configure the Cameras](../how-to-customize/camera-management/configure-cameras.md):
+`make start-rtsp` starts the cameras listed in [`configs/cameras-pymavlink.yaml`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/configs/cameras-pymavlink.yaml): one pipeline per camera, each streaming on `rtsp://<HOST_IP>:8555/uav-<camera>`. The shipped file has three cameras (`front_camera`, `bottom_camera`, `back_camera`) with detection on the NPU and scene captions from the VLM on the GPU. Edit the file to choose the video, the detection and captioning devices and models, the prompt, and the overlay of each camera, see [Configure the Cameras](../how-to-customize/camera-management/configure-cameras.md):
 
 ```bash
 make check-cameras     # validate configs/cameras-pymavlink.yaml and show what would run (nothing is started)
@@ -157,7 +157,7 @@ make cameras-status    # compare the file with the running pipelines
 > — see [Step 5 — View the output stream](#5-view-the-output-stream) for the RTSP URLs.
 >
 > To run the cameras right away, without arming the drone, use `pipeline_manager.py --start-now`,
-> see [Starting pipelines without arming the drone](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/README.md#starting-pipelines-without-arming-the-drone).
+> see [Starting pipelines without arming the drone](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/README.md#starting-pipelines-without-arming-the-drone).
 
 #### Option B — Manual REST API
 
@@ -257,7 +257,7 @@ Then open `http://<VIZ_HOST_IP>:8080` (the address `make init`, run automaticall
 detected — see the ground station's `.env`), enter the **UAV host's IP** (the `HOST_IP` of
 this application's `.env`, same as `<HOST_IP>` above) and press **Connect**. The camera cards
 appear once the cameras run (after the vehicle is armed). The ground-station machine must reach
-ports`443`, `1883` and `8555` of this host. See the [UAV Ground Station README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/README.md) for all options.
+ports`443`, `1883` and `8555` of this host. See the [UAV Ground Station README](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/README.md) for all options.
 
 > [!NOTE]
 > `make up` shows video, captions, Flight Summary, and per-host metrics only.
@@ -265,7 +265,7 @@ ports`443`, `1883` and `8555` of this host. See the [UAV Ground Station README](
 > over indexed footage, run `make up-vss` instead of `make up` (it brings up
 > everything `make up` does, plus 8 extra VSS containers) — it needs its own
 > required `.env` variables first (MinIO/Postgres credentials, an embedding
-> model, and a detection model). See [VSS search in the UAV Ground Station Get Started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-ground-station/docs/user-guide/get-started.md#vss-search),
+> model, and a detection model). See [VSS search in the UAV Ground Station Get Started guide](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-ground-station/docs/user-guide/get-started.md#vss-search),
 > and [tune the VSS search results](../how-to-customize/search-tuning/vss-search-tuning.md)
 > once it is running.
 

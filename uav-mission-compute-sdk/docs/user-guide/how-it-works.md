@@ -323,7 +323,7 @@ mosquitto_sub -h localhost -p 1884 -t "uav/uav-1/telemetry/#" -v
 - Writes 6 InfluxDB measurements: `flight_position`, `flight_attitude`, `flight_velocity`, `flight_battery`, `flight_gps`, `flight_status`
 
 **Metrics Manager** (`infra/metrics-manager`, image: `intel/metrics-manager:2026.3.0-rc1`)
-- Reused from [`edge-ai-libraries/microservices/metrics-manager`](https://github.com/open-edge-platform/edge-ai-libraries/tree/main/microservices/metrics-manager) — published image, no code changes
+- Reused from [`edge-ai-libraries/microservices/metrics-manager`](https://github.com/open-edge-platform/edge-ai-libraries/tree/release-2026.3.0/microservices/metrics-manager) — published image, no code changes
 - Custom `telegraf.conf` mounted at runtime adds: `[[outputs.influxdb_v2]]`, RAPL power script, `inputs.disk/diskio/net`
 - Telegraf-based host platform metrics collected every 1 s
 - **CPU**: `usage_user/system/idle` via `inputs.cpu`; average frequency via `read_cpu_freq.sh`; package temperature via `inputs.temp`
@@ -438,5 +438,5 @@ docker logs camera-bridge | grep -i error
 
 ## See Also
 
-- [CLAUDE.md](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-mission-compute-sdk/CLAUDE.md) - Quick reference guide
+- [CLAUDE.md](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-mission-compute-sdk/CLAUDE.md) - Quick reference guide
 - [ports.md](./ports.md) - Port mappings

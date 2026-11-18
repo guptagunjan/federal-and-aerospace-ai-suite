@@ -48,7 +48,7 @@ For support, submit your bug report and feature request to [Github Issues](https
 
 ## License
 
-The **Federal and Aerospace AI Suite** project is licensed under the [APACHE 2.0](LICENSE).  
+The **Federal and Aerospace AI Suite** project is licensed under the [APACHE 2.0](LICENSE).
 
 ## Intended Use
 
@@ -58,5 +58,5 @@ Certain features, such as authentication, TLS termination, and external access c
 assumed to be covered at the infrastructure level.
 
 For more information, refer to the
-[Notes on Usage](https://docs.openedgeplatform.intel.com/dev/OEP-articles/notes-on-usage.html)
+[Notes on Usage](https://docs.openedgeplatform.intel.com/2026.3/OEP-articles/notes-on-usage.html)
 document.

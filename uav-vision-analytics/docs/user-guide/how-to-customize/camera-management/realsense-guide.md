@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # RealSense — UAV Vision Analytics
 
-A RealSense (or any UVC webcam) is a live camera in [`configs/cameras-pymavlink.yaml`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/configs/cameras-pymavlink.yaml): the camera has a
+A RealSense (or any UVC webcam) is a live camera in [`configs/cameras-pymavlink.yaml`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/configs/cameras-pymavlink.yaml): the camera has a
 `device` instead of a `video` file. The full settings are described in [Configure the cameras](./configure-cameras.md#live-cameras-realsense-usb-webcams);
 this page is the short walk-through.
 
@@ -49,7 +49,7 @@ See [System Requirements](../../get-started/system-requirements.md) for the full
 
 Live cameras use `uav_camera_<det>` and `uav_camera_<det>_<vlm>`. `configs/config-pymavlink.json` has `uav_camera_npu` and
 `uav_camera_npu_gpu`; for a CPU or GPU camera, copy the pipeline you need from
-[`configs/config-pymavlink-realsense.json`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/configs/config-pymavlink-realsense.json) (all nine) into it and recreate the
+[`configs/config-pymavlink-realsense.json`](https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/configs/config-pymavlink-realsense.json) (all nine) into it and recreate the
 container. `make check-cameras` says which pipeline is missing.
 
 ## UAV Mission Compute SDK stack
