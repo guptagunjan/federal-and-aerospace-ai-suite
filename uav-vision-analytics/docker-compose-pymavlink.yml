@@ -6,8 +6,8 @@ services:
     environment:
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}
-      - no_proxy=${no_proxy},${HOST_IP}
-      - NO_PROXY=${no_proxy},${HOST_IP}
+      - no_proxy=${no_proxy:+${no_proxy},}${HOST_IP:-127.0.0.1}
+      - NO_PROXY=${no_proxy:+${no_proxy},}${HOST_IP:-127.0.0.1}
     volumes:
       - ./configs/mosquitto:/mosquitto/config
     networks:
@@ -66,8 +66,9 @@ services:
     environment:
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}
-      - no_proxy=${no_proxy},${HOST_IP},host.docker.internal
-      - NO_PROXY=${no_proxy},${HOST_IP},host.docker.internal
+      # The image rejects a no_proxy that starts with a comma, so the host's value is prefixed only when set.
+      - no_proxy=${no_proxy:+${no_proxy},}${HOST_IP:-127.0.0.1},host.docker.internal
+      - NO_PROXY=${no_proxy:+${no_proxy},}${HOST_IP:-127.0.0.1},host.docker.internal
       - ENABLE_RTSP=true
       - RTSP_PORT=8555
       - APPEND_PIPELINE_NAME_TO_PUBLISHER_TOPIC=true
