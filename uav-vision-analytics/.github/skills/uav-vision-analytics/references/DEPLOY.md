@@ -61,7 +61,7 @@ Docker Compose fragment:
 | Service | Image | Ports | Role |
 |---------|-------|-------|------|
 | `dlstreamer-pipeline-server` | `${DLSTREAMER_PIPELINE_SERVER_IMAGE}` | *(none — reached only via `nginx`)* | AI inference + RTSP output; `ARM_SOURCE=mqtt` reads the SDK's MQTT status topic, `CAMERAS_CONFIG=configs/cameras-uavsdk.yaml` |
-| `metrics-manager` | `intel/metrics-manager:2026.3.0-rc1` | — | CPU/GPU/NPU/power metrics collection (container `uav-va-metrics-manager`) |
+| `metrics-manager` | `intel/metrics-manager:2026.3.0-rc2` | — | CPU/GPU/NPU/power metrics collection (container `uav-va-metrics-manager`) |
 | `nginx` | `nginx:1.27-alpine` | `80`, `443`, `8555` | Reverse proxy / TLS termination; this mode has no `broker`/`px4`/`mavlink-router` services — MQTT (caption/telemetry) is the SDK's own broker, reached via `host.docker.internal:${MQTT_BROKER_PORT:-1883}` |
 
 No `broker`, `px4` or `mavlink-router` service exists in this mode — telemetry arrives over
