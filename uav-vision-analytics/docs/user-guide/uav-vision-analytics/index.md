@@ -2,10 +2,10 @@
 
 <!--hide_directive
 <div class="component_card_widget">
-  <a class="icon_github" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/tree/main/uav-vision-analytics">
+  <a class="icon_github" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/tree/release-2026.3.0/uav-vision-analytics">
      GitHub
   </a>
-  <a class="icon_document" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/main/uav-vision-analytics/README.md">
+  <a class="icon_document" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/blob/release-2026.3.0/uav-vision-analytics/README.md">
      Readme
   </a>
   <a class="icon_download" href="https://github.com/open-edge-platform/federal-and-aerospace-ai-suite/releases/tag/fedaero-latest">
@@ -43,6 +43,7 @@ scene captions, and host utilization from a separate machine.
 :hidden:
 
 Install UAV Vision <./install-uav-app.md>
+Installation on Ubuntu <./installation-on-ubuntu.md>
 How-To Guides <./how-to-guides.md>
 Customize UAV Vision <./how-to-customize.md>
 Troubleshooting <./troubleshooting.md>
