@@ -14,7 +14,7 @@ distros on x86_64.
 > [!NOTE]
 > This path is intended for advanced users who need fine-grained control over disk
 > layout, installed packages, and package repositories. Most users can start with the simpler
-> path, [using standard Ubuntu image](./installation-on-ubuntu.md).
+> path, [using standard Ubuntu image](../uav-vision-analytics/installation-on-ubuntu.md).
 
 This article will show you how to:
 
@@ -154,7 +154,7 @@ stick under **Boot → Boot options**. Save the changes and reboot; the automati
 
 After the OS is installed, install the applications with `openedge-cli`:
 
-- [Install UAV Vision Analytics on Ubuntu](./installation-on-ubuntu.md)
+- [Install UAV Vision Analytics on Ubuntu](../uav-vision-analytics/installation-on-ubuntu.md)
 - [Install UAV Ground Station on Ubuntu](../uav-ground-station/installation-on-ubuntu.md)
 
 ## Package curation and template customization
